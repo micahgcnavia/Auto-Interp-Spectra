@@ -1,24 +1,35 @@
 from importlib import reload 
-import lib.core as functions
+import lib.interpolate as functions
 reload(functions) 
-from lib.core import *
+from lib.interpolate import *
 import os
-cwd = os.getcwd()
-
 
 def main():
 
-    targets = pd.read_csv('teff_logg_feH.csv')
-
-    wav_ref, flux_ref = np.loadtxt(cwd+'/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt', unpack=True)
-
+    cwd = os.getcwd()
     path = cwd+'/example/'
 
-    corot1_data = pd.read_csv(path+'corot-1_data.csv')
-    corot1_interp = pd.read_csv(path+'corot-1_interpolate.csv')
-            
+    # Initialize interpolator
 
-    flux_interp = interp(targets.iloc[0,:], wav_ref, corot1_data, corot1_interp, path, show_graphs=True, save_fig=True)
+    wav_ref, _ = np.loadtxt(cwd+'/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt', unpack=True)
+    interpolator = SpectrumInterpolator(wav_ref=wav_ref)
+
+    # Prepare inputs
+    targets = pd.read_csv('stars.csv') # List of objects to interpolate
+    target = targets.iloc[0,:]
+    spectra = pd.read_csv(path+'corot-1_data.csv')  # Your spectra data
+    interpolate_flags = pd.read_csv(path+'corot-1_interpolate.csv')
+
+    # Perform interpolation
+    result = interpolator.interpolate(
+        target=target,
+        spectra=spectra,
+        interpolate_flags=interpolate_flags,
+        cwd=cwd,
+        show_graphs=True,
+        save_fig=True,
+        save_file=False
+    )
 
 if __name__ == "__main__":
     main()

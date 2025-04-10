@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>lib package &#8212; Auto Interpolate Spectra April 2025 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="lib-package">
+<h1>lib package<a class="headerlink" href="#lib-package" title="Permalink to this heading">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</div>
+<div class="section" id="module-lib.core">
+<span id="lib-core-module"></span><h2>lib.core module<a class="headerlink" href="#module-lib.core" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="lib.core.graph">
+<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Essa função mostra os passos da interpolação para o alvo escolhido.
+name: string com o nome do alvo
+interp: dicionários com todas as informações dos espectrus crus e interpolados</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lib.core.interp">
+<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">interp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_graphs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#interp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>target: tabela com os parâmetros do objeto a ser interpolado
+wav_ref: passo de comprimento de onda de referência
+spectra: objeto do tipo filter()[0], i.e., lista de espectros que serão usados para interpolar
+interpolate: objeto do tipo filter()[1], i.e., dicionário com as flags para interpolar ou não x parâmetro
+show_graphs: flag para mostrar ou não os gráficos da interpolação
+save_file: flag para salvar o espectro interpolado
+save_fig: flag para salvar os gráficos
+path: caminho da pasta onde os arquivos serão salvos</p>
+<p>Retornáveis:
+comprimento de onda de referência e fluxo interpolado
+gráfico mostrando os passos da interpolação (opcional)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lib.core.interp_partial">
+<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">interp_partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spectrum1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectrum2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#interp_partial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.interp_partial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Essa função tem a forma de uma interpolação para parâmetros quaisquer.
+Retorna o espectro interpolado.</p>
+<p>spectrum1 tem sempre o valor mínimo do parâmetro que será interpolado.
+delta_param: variação do parâmetro (pode variar com diferentes grades de modelos). 
+Exemplo: para BT-Settl, Δlogg = 0.5.
+factor: valor do gabarito - valor mínimo do parâmetro do modelo. Exemplo:
+Gabarito: logg = 4.3. 
+factor = 4.3 - 4.0 = 0.3</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-lib">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lib" title="Permalink to this heading">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Auto Interpolate Spectra</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2025, Micah G. C. Navia.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/lib.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

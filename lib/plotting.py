@@ -19,7 +19,7 @@ def graph(name, interp, wav_ref, cwd, save_fig=False):
 
     path = cwd+'/output/plots/'
 
-    if 'interp_spec' not in interp.keys():
+    if 'interp2_spec' not in interp.keys():
 
         x_lower, x_higher = [6552.5/1e4, 6657/1e4]
         y_lower, y_higher = [0.6e7/1e4, 0.73e7/1e4]
@@ -40,7 +40,7 @@ def graph(name, interp, wav_ref, cwd, save_fig=False):
         ax.plot(wav_ref/1e4,interp['final_spec']/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp['final_params'][0]))+' K, log g = '+
                  str(interp['final_params'][1]).replace('.', ',')+', [Fe/H] = '+str(interp['final_params'][2]).replace(',', '.'))
         
-        ax.legend(fontsize = 'x-large', loc='upper center', bbox_to_anchor=(0.5, 1.0),
+        ax.legend(fontsize = 13, loc='upper center', bbox_to_anchor=(0.5, 1.0),
                fancybox=False, ncol=3, frameon=False)
     
         ax.set_xlim(x_lower, x_higher)
@@ -84,12 +84,12 @@ def graph(name, interp, wav_ref, cwd, save_fig=False):
 
         line_styles = ['--', '-', '-.', ':']
         
-        for interp_spec, interp_param, ls in zip(interp['interp_spec'], interp['interp_params'], line_styles):
+        for interp_spec, interp_param, ls in zip(interp['interp2_spec'], interp['interp2_params'], line_styles):
     
             ax1.plot(wav_ref/1e4,interp_spec/1e4, c='k', ls=ls, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
                      str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.'))
         
-        ax1.legend(fontsize = 17, loc='upper center', bbox_to_anchor=(0.5, 1.0),
+        ax1.legend(fontsize = 13, loc='upper center', bbox_to_anchor=(0.5, 1.0),
                    fancybox=False, ncol=3, frameon=False)
         
         ax1.set_xlim(x_lower, x_higher)
@@ -100,21 +100,21 @@ def graph(name, interp, wav_ref, cwd, save_fig=False):
             
         #ax2.yaxis.tick_right()
     
-        if 'interp2_spec' not in interp.keys():
+        if 'interp3_spec' not in interp.keys():
     
-            for interp_spec, interp_param in zip(interp['interp_spec'], interp['interp_params']):
+            for interp_spec, interp_param in zip(interp['interp2_spec'], interp['interp2_params']):
         
                 ax2.plot(wav_ref/1e4,interp_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
                          str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.'))
     
         else:
     
-            for interp_spec, interp_param in zip(interp['interp_spec'], interp['interp_params']):
+            for interp_spec, interp_param in zip(interp['interp2_spec'], interp['interp2_params']):
     
                 ax2.plot(wav_ref/1e4,interp_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
                          str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.')) 
     
-            for interp2_spec, interp2_param in zip(interp['interp2_spec'], interp['interp2_params']):
+            for interp2_spec, interp2_param in zip(interp['interp3_spec'], interp['interp3_params']):
     
                 ax2.plot(wav_ref/1e4,interp2_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp2_param[0]))+' K, log g = '+
                          str(interp2_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp2_param[2]).replace(',', '.'))
@@ -122,7 +122,7 @@ def graph(name, interp, wav_ref, cwd, save_fig=False):
         ax2.plot(wav_ref/1e4,interp['final_spec']/1e4, c='k', lw=lw, label = '$T_{ef}$ = '+str(int(interp['final_params'][0]))+' K, log g = '+
                      str(interp['final_params'][1]).replace(',', '.')+', [Fe/H] = '+str(interp['final_params'][2]).replace(',', '.'))
         
-        ax2.legend(fontsize = 17, loc='upper center',bbox_to_anchor=(0.5, 1.0),
+        ax2.legend(fontsize = 13, loc='upper center',bbox_to_anchor=(0.5, 1.0),
                   fancybox=False, ncol=3, frameon=False)
     
         ax2.set_xlim(x_lower, x_higher)

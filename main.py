@@ -26,10 +26,12 @@ def main():
         spectra=spectra,
         interpolate_flags=interpolate_flags,
         cwd=cwd,
-        show_graphs=True,
-        save_fig=True,
+        show_graphs=False,
+        save_fig=False,
         save_file=False
     )
+
+    #print(result)
 
 if __name__ == "__main__":
     main()

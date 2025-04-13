@@ -4,12 +4,12 @@ from glob import glob
 from natsort import os_sorted
 import os
 from tqdm import tqdm
-from itertools import product
-
+from more_itertools import pairwise
+from collections import defaultdict
 from lib.plotting import graph
 
 class SpectrumInterpolator:
-    def __init__(self, wav_ref, delta_params=None):
+    def __init__(self, wav_ref, target, delta_params=None):
         """
         Initialize the SpectrumInterpolator with reference wavelength and optional delta parameters.
         
@@ -18,7 +18,7 @@ class SpectrumInterpolator:
             delta_params (dict): Dictionary of parameter deltas (default: {'teff': 100, 'logg': 0.5, 'feh': 0.5})
         """
 
-        print('Initializing class...\n')
+        print('='*20+' Initializing SpectrumInterpolator '+'='*20+'\n')
         self.wav_ref = wav_ref
         self.delta_params = delta_params or {
             'teff': 100,  # [K]
@@ -26,6 +26,14 @@ class SpectrumInterpolator:
             'feh': 0.5    # [dex]
         }
         self.cwd = os.getcwd()
+        self.target = target
+        self.params = {
+            'teff': self.target['teff'].item(),
+            'logg': self.target['logg'].item(),
+            'feh': self.target['feh'].item()
+        }
+        self.parameters = list(self.params.keys())
+
         
     @staticmethod
     def interp_partial(spectrum1, spectrum2, factor, delta_param):
@@ -35,41 +43,41 @@ class SpectrumInterpolator:
 
         return spectrum1 + (((spectrum2 - spectrum1) * factor) / delta_param)
     
-    def get_extreme_spectra(self, spectra, interpolate_flags, param_values):
-        """
-        Get spectra with extreme parameter values based on interpolation flags.
-        """
+    def sort_df(self, df, param):
 
-        conditions = []
+        results = []
         
-        for param, value in param_values.items():
-            if interpolate_flags[param][0]:
-                col = param  # 'teff', 'logg', or 'feh'
-                val = min(spectra[col]) if value == 'min' else max(spectra[col])
-                conditions.append(spectra[col] == val)
+        grouped = df.groupby([p for p in self.parameters if p != param])
         
-        if not conditions:
-            return pd.DataFrame()
-            
-        combined_condition = conditions[0]
-        for cond in conditions[1:]:
-            combined_condition &= cond
-            
-        return spectra.loc[combined_condition]
+        for _, group in grouped:
+            min_row = group.loc[group[param].idxmin()]
+            max_row = group.loc[group[param].idxmax()]
+            results.extend([min_row, max_row])
+        
+        return pd.DataFrame(results) if results else pd.DataFrame()
     
     def load_and_interpolate_spectrum(self, spectrum_row):
         """
         Load spectrum from file and interpolate to wavelength resolution of reference.
         """
 
-        wav, spec = np.loadtxt(self.cwd + spectrum_row['path'].item(), unpack=True)
+        wav, spec = np.loadtxt(self.cwd + spectrum_row['path'], unpack=True)
         return np.interp(self.wav_ref, wav, spec)
+
+    def combine_dicts(self, dict_list):
+
+        combined = defaultdict(list)
+        for d in dict_list:
+            for key, value in d.items():
+                combined[key].append(value)
+
+        return pd.DataFrame(dict(combined))
 
     def check_spectra_availability(self, interpolate_flags, spectra):
         """
         Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
         """
-
+        print('Checking spectra availability...')
         n = interpolate_flags.sum().sum() # number of parameters to interpolate
 
         N = len(spectra) # number of spectra available
@@ -80,76 +88,43 @@ class SpectrumInterpolator:
         else:
             return True
     
-    def perform_interpolation(self, spectra_pairs, target_params, interpolate_flags, spectra):
-        """
-        Perform interpolation steps for given spectra pairs and parameters.
-        """
-        print('Performing interpolation...\n')
+    def interp_param(self, df, param):
 
-        all_spectra = [self.load_and_interpolate_spectrum(pair) for pair in spectra_pairs] # Fluxes
+        interp_steps = [] # This will storage each dictionary with updated parameters and the corresponding interpolated flux
 
-        # Initialize parameters tracking with the raw spectra parameters
-        all_params = [
-            (row['teff'].iloc[0], row['logg'].iloc[0], row['feh'].iloc[0]) 
-            for row in spectra_pairs
-        ]
+        for i in tqdm(range(0, len(df), 2), desc='Interpolating '+str(param)):
+            row1 = df.iloc[i, :].to_dict()  # First row of the pair
+            row2 = df.iloc[i + 1, :].to_dict() if i + 1 < len(df) else None  # Second row (if exists)
+            
+            if row2 is None:
+                pass
 
-        print(all_params,'\n')
+            try:
+                spec1 = self.load_and_interpolate_spectrum(row1) # This will work only for the first interpolated parameter
+                spec2 = self.load_and_interpolate_spectrum(row2)
 
-        # All spectra used in the interpolation process:
-        interp_steps = {'raw_spec': all_spectra,
-                        'raw_params': all_params}
+            except:
+                spec1 = row1['flux'] # Then for the rest of the parameters this should work
+                spec2 = row2['flux']
 
-        new_spectra = []
-        new_params = []
-        
-        for i, interp_flag in enumerate(interpolate_flags.items()):
-            if not interp_flag[1].item():
-                continue
-                
-            if len(all_spectra) % 2 != 0:
-                raise ValueError("Odd number of spectra for interpolation")
+            factor = self.params[param] - row1[param] # Desidered value - minimum parameter value
 
+            interp_flux = self.interp_partial(
+                spec1,
+                spec2,
+                factor,
+                self.delta_params[param]
+            )
 
-            for j in range(0, len(all_spectra)-2):
+            dic = {key: self.params[param] if key == param else row1[key] for key in self.parameters} # It can be row1 or row2 because the parameters' values are the same
+            dic['flux'] = interp_flux
 
-                # spec1 e spec2 vão mudar a partir da primeira interpolação!
-                spec1 = all_spectra[j]
-                spec2 = all_spectra[j+2]
+            interp_steps.append(dic)
 
-                print('Parameters:', all_params[j])
-                
-                # Perform the interpolation
-                print('Interpolating', interp_flag[0])
-                interpolated = self.interp_partial(
-                    spec1, spec2, 
-                    target_params[interp_flag[0]] - min(spectra[interp_flag[0]]), 
-                    self.delta_params[interp_flag[0]]
-                )
-                new_spectra.append(interpolated) # Flux
-                
-                # Create new parameter set for the interpolated spectrum
-                param_values = {}
-                for p in interpolate_flags:
-                    print('Analysing', p, 'interp', interp_flag[0])
-                    if p == interp_flag[0]:
-                        print('Interpolated value', target_params[p])
-                        param_values[p] = target_params[p]  # Interpolated value
-                    else:
-                        print('Getting original value')
-                        # Take value from either spectrum (should be same for non-interpolated params)
-                        print('index = ',j, all_params[j][list(interpolate_flags.keys()).index(p)])
-                        param_values[p] = all_params[j][list(interpolate_flags.keys()).index(p)]
-                
-                new_params.append(tuple(param_values[p] for p in interpolate_flags))
-                print('New parameters:', new_params, '\n')
-        
-            interp_steps[f'interp{i+1}_spec'] = new_spectra
-            interp_steps[f'interp{i+1}_params'] = new_params
+        return interp_steps
+
     
-        return new_spectra[0], interp_steps
-    
-    def interpolate(self, target, spectra, interpolate_flags, cwd, show_graphs=False, save_file=False, save_fig=False):
+    def interpolate_spectra(self, spectra, interpolate_flags, show_graphs=False, save_file=False, save_fig=False):
         """
         Main interpolation method.
         
@@ -165,55 +140,55 @@ class SpectrumInterpolator:
         Returns:
             Dictionary with interpolation results and steps
         """
-        name = target['star'].replace(' ', '').lower()
-        params = {
-            'teff': target['teff'].item(),
-            'logg': target['logg'].item(),
-            'feh': target['feh'].item()
-        }
-        
-        # Get all combinations of min/max for parameters we're interpolating
-        extremes = list(product(*[['min', 'max'] if interpolate_flags[p][0] else ['fixed'] for p in interpolate_flags]))
-        
-        # Get the extreme spectra
-        extreme_spectra = []
-        for combo in extremes:
-            param_values = {p: combo[i] for i, p in enumerate(interpolate_flags)}
-            extreme_spectra.append(self.get_extreme_spectra(spectra, interpolate_flags, param_values))
-        
+        name = self.target['star'].item().strip().lower()
+
         # Check if we have all required spectra
-        if any(len(s) == 0 for s in extreme_spectra):
+        if self.check_spectra_availability(interpolate_flags, spectra):
+            print('All spectra available!')
+
+        else:
             print(f'Missing spectra for {name}')
             return None
         
         # Perform the interpolation
 
-        try:
-            final_spectrum, interp_steps = self.perform_interpolation(extreme_spectra, params, interpolate_flags, spectra)
-        except ValueError as e:
-            print(f'Interpolation error for {name}: {str(e)}')
-            return None
-        
-        # Prepare the return dictionary
-        interp_steps['final_params'] = [params[p] for p in interpolate_flags]
-        interp_steps['final_spec'] = final_spectrum
-        
-        cwd = os.getcwd()
+        steps = []
+
+        for param, condition in interpolate_flags.iteritems():
+
+            if condition[0]: # Checks whether the current parameter needs to be interpolated
+
+                if len(steps) == 0:
+                    source = spectra # Original dataframe retrieved from filtering the database
+                else:
+                    source = steps[-1] # Gets latest dataframe after first interpolation loop
+
+                df = self.sort_df(source, param) # Sorts dataframe 
+                df = self.interp_param(df, param) # Interpolates current parameter
+                df = self.combine_dicts(df) # Combine dictionaries to create a new dataframe with updated values after interpolation
+                steps.append(df)
+            else:
+                pass
+
+        print('='*40+' Finish! '+'='*40)        
+        print('Result:')
+        print(steps[-1])
+        print('='*89)
 
         # Handle output options
         if show_graphs:
-            graph(name, interp_steps, self.wav_ref, cwd, save_fig=save_fig)
+            graph(name, steps, self.wav_ref, self.cwd, save_fig=save_fig)
         
         if save_file:
 
             try:
-                path = cwd+'/output/interp_spectra/'
+                path = self.cwd+'/output/interp_spectra/'
                 os.mkdir(path)
             
             except:
                 pass
 
-            df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': final_spectrum})
+            df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux']})
             df.to_csv(f"{path}{name}_interp.csv", index=False)
         
-        return interp_steps
+        return steps

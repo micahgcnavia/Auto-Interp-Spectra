@@ -9,29 +9,24 @@ def main():
     cwd = os.getcwd()
     path = cwd+'/example/'
 
-    # Initialize interpolator
-
-    wav_ref, _ = np.loadtxt(cwd+'/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt', unpack=True)
-    interpolator = SpectrumInterpolator(wav_ref=wav_ref)
-
     # Prepare inputs
+    wav_ref, _ = np.loadtxt(cwd+'/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt', unpack=True)
     targets = pd.read_csv('stars.csv') # List of objects to interpolate
-    target = targets.iloc[0,:]
-    spectra = pd.read_csv(path+'corot-1_data.csv')  # Your spectra data
-    interpolate_flags = pd.read_csv(path+'corot-1_interpolate.csv')
+    target = targets.loc[targets['star'] == 'HAT-P-3 ']
+    spectra = pd.read_csv(path+'hat-p-3_data.csv')  # Your spectra data
+    interpolate_flags = pd.read_csv(path+'hat-p-3_interpolate.csv')
+
+    # Initialize interpolator
+    interpolator = SpectrumInterpolator(wav_ref=wav_ref, target=target)
 
     # Perform interpolation
-    result = interpolator.interpolate(
-        target=target,
+    result = interpolator.interpolate_spectra(
         spectra=spectra,
         interpolate_flags=interpolate_flags,
-        cwd=cwd,
         show_graphs=False,
         save_fig=False,
         save_file=False
     )
-
-    #print(result)
 
 if __name__ == "__main__":
     main()

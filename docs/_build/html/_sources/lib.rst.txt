@@ -4,10 +4,10 @@ lib package
 Submodules
 ----------
 
-lib.core module
----------------
+lib.interpolate module
+----------------------
 
-.. automodule:: lib.core
+.. automodule:: lib.interpolate
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ lib.core module
 Module contents
 ---------------
 
-.. automodule:: lib
+.. automodule:: lib.plotting
    :members:
    :undoc-members:
    :show-inheritance:

@@ -37,48 +37,163 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
 </div>
-<div class="section" id="module-lib.core">
-<span id="lib-core-module"></span><h2>lib.core module<a class="headerlink" href="#module-lib.core" title="Permalink to this heading">¶</a></h2>
+<div class="section" id="module-lib.interpolate">
+<span id="lib-interpolate-module"></span><h2>lib.interpolate module<a class="headerlink" href="#module-lib.interpolate" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lib.interpolate.</span></span><span class="sig-name descname"><span class="pre">SpectrumInterpolator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Encapsulates the entire interpolation process.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.check_spectra_availability">
+<span class="sig-name descname"><span class="pre">check_spectra_availability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interpolate_flags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectra</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.check_spectra_availability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.check_spectra_availability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interpolate_flags</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame specifing which parameters to interpolate based on bool values.</p></li>
+<li><p><strong>spectra</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame containing all spectra needed for interpolation and their parameters’ values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True of False</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.combine_dicts">
+<span class="sig-name descname"><span class="pre">combine_dicts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.combine_dicts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.combine_dicts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines multiple dictionaries and merged them into a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dict_list</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – List of dictionaries to combine.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The combined DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.interp_param">
+<span class="sig-name descname"><span class="pre">interp_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.interp_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.interp_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates the spectra based on a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – Sorted DataFrame containing all spectra needed for interpolation and their parameters’ values.</p></li>
+<li><p><strong>param</strong> (<em>str</em>) – Name of the parameter to interpolate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of dictionaries stating the updated parameters at each interpolation and the interpolated flux.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.interp_partial">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interp_partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spectrum1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectrum2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.interp_partial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.interp_partial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear interpolation between two spectra.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spectrum1</strong> (<em>numpy.array</em><em>(</em><em>)</em>) – Flux with lowest parameter value.</p></li>
+<li><p><strong>spectrum2</strong> (<em>numpy.array</em><em>(</em><em>)</em>) – Flux with highest parameter value.</p></li>
+<li><p><strong>factor</strong> (<em>float</em><em> or </em><em>int</em>) – Amount to increase.</p></li>
+<li><p><strong>delta_param</strong> (<em>float</em><em> or </em><em>int</em>) – Model’s parameter step</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The interpolated flux.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.array()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.interpolate_spectra">
+<span class="sig-name descname"><span class="pre">interpolate_spectra</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spectra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_flags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.interpolate_spectra"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.interpolate_spectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main interpolation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spectra</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame containing all spectra needed for interpolation and their parameters’ values.</p></li>
+<li><p><strong>interpolate_flags</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame specifing which parameters to interpolate based on bool values.</p></li>
+<li><p><strong>save_file</strong> (<em>bool</em>) – Flag to indicate whether to save the interpolated spectrum in a CSV file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of DataFrames containing updated parameters and fluxes at each interpolation step.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list[pandas.DataFrame]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.load_and_interpolate_spectrum">
+<span class="sig-name descname"><span class="pre">load_and_interpolate_spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spectrum_row</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.load_and_interpolate_spectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.load_and_interpolate_spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads spectrum from file and interpolates its flux into the wavelength array of reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>spectrum_row</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame row containing the path to the spectrum of interest.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The interpolated flux.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.array()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lib.interpolate.SpectrumInterpolator.sort_df">
+<span class="sig-name descname"><span class="pre">sort_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/interpolate.html#SpectrumInterpolator.sort_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.interpolate.SpectrumInterpolator.sort_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts the DataFrame to facilitate the interpolation order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pandas.DataFrame</em><em>(</em><em>)</em>) – DataFrame containing all spectra needed for interpolation and their parameters’ values.</p></li>
+<li><p><strong>param</strong> (<em>str</em>) – Name of the parameter to sort the DataFrame accordingly.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The sorted DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame()</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-lib.plotting">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lib.plotting" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="lib.core.graph">
-<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.graph" title="Permalink to this definition">¶</a></dt>
-<dd><p>Essa função mostra os passos da interpolação para o alvo escolhido.
+<dt class="sig sig-object py" id="lib.plotting.graph">
+<span class="sig-prename descclassname"><span class="pre">lib.plotting.</span></span><span class="sig-name descname"><span class="pre">graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cwd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/plotting.html#graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.plotting.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots raw and interpolated spectra.
 name: string com o nome do alvo
 interp: dicionários com todas as informações dos espectrus crus e interpolados</p>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="lib.core.interp">
-<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">interp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wav_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_graphs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#interp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.interp" title="Permalink to this definition">¶</a></dt>
-<dd><p>target: tabela com os parâmetros do objeto a ser interpolado
-wav_ref: passo de comprimento de onda de referência
-spectra: objeto do tipo filter()[0], i.e., lista de espectros que serão usados para interpolar
-interpolate: objeto do tipo filter()[1], i.e., dicionário com as flags para interpolar ou não x parâmetro
-show_graphs: flag para mostrar ou não os gráficos da interpolação
-save_file: flag para salvar o espectro interpolado
-save_fig: flag para salvar os gráficos
-path: caminho da pasta onde os arquivos serão salvos</p>
-<p>Retornáveis:
-comprimento de onda de referência e fluxo interpolado
-gráfico mostrando os passos da interpolação (opcional)</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="lib.core.interp_partial">
-<span class="sig-prename descclassname"><span class="pre">lib.core.</span></span><span class="sig-name descname"><span class="pre">interp_partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spectrum1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spectrum2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_param</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lib/core.html#interp_partial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lib.core.interp_partial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Essa função tem a forma de uma interpolação para parâmetros quaisquer.
-Retorna o espectro interpolado.</p>
-<p>spectrum1 tem sempre o valor mínimo do parâmetro que será interpolado.
-delta_param: variação do parâmetro (pode variar com diferentes grades de modelos). 
-Exemplo: para BT-Settl, Δlogg = 0.5.
-factor: valor do gabarito - valor mínimo do parâmetro do modelo. Exemplo:
-Gabarito: logg = 4.3. 
-factor = 4.3 - 4.0 = 0.3</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-lib">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lib" title="Permalink to this heading">¶</a></h2>
 </div>
 </div>
 

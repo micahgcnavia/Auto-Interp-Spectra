@@ -34,26 +34,36 @@
             
   <h1>Source code for main</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">reload</span> 
-<span class="kn">import</span> <span class="nn">lib.core</span> <span class="k">as</span> <span class="nn">functions</span>
+<span class="kn">import</span> <span class="nn">lib.interpolate</span> <span class="k">as</span> <span class="nn">functions</span>
 <span class="n">reload</span><span class="p">(</span><span class="n">functions</span><span class="p">)</span> 
-<span class="kn">from</span> <span class="nn">lib.core</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">lib.interpolate</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="n">cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
-
 
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../main.html#main.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Runs the interpolation pipeline.</span>
 
-    <span class="n">targets</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;teff_logg_feH.csv&#39;</span><span class="p">)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">wav_ref</span><span class="p">,</span> <span class="n">flux_ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">cwd</span><span class="o">+</span><span class="s1">&#39;/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt&#39;</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
+    <span class="n">cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">cwd</span><span class="o">+</span><span class="s1">&#39;/example/&#39;</span>
 
-    <span class="n">corot1_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s1">&#39;corot-1_data.csv&#39;</span><span class="p">)</span>
-    <span class="n">corot1_interp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s1">&#39;corot-1_interpolate.csv&#39;</span><span class="p">)</span>
-            
+    <span class="c1"># Prepare inputs</span>
+    <span class="n">wav_ref</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">cwd</span><span class="o">+</span><span class="s1">&#39;/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt&#39;</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;stars.csv&#39;</span><span class="p">)</span> <span class="c1"># List of objects to interpolate</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">targets</span><span class="p">[</span><span class="s1">&#39;star&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HAT-P-3 &#39;</span><span class="p">]</span>
+    <span class="n">spectra</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s1">&#39;hat-p-3_data.csv&#39;</span><span class="p">)</span>  <span class="c1"># Your spectra data</span>
+    <span class="n">interpolate_flags</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s1">&#39;hat-p-3_interpolate.csv&#39;</span><span class="p">)</span>
 
-    <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">interp</span><span class="p">(</span><span class="n">targets</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">wav_ref</span><span class="p">,</span> <span class="n">corot1_data</span><span class="p">,</span> <span class="n">corot1_interp</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">show_graphs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_fig</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+    <span class="c1"># Initialize interpolator</span>
+    <span class="n">interpolator</span> <span class="o">=</span> <span class="n">SpectrumInterpolator</span><span class="p">(</span><span class="n">wav_ref</span><span class="o">=</span><span class="n">wav_ref</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="c1"># Perform interpolation</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">interpolator</span><span class="o">.</span><span class="n">interpolate_spectra</span><span class="p">(</span>
+        <span class="n">spectra</span><span class="o">=</span><span class="n">spectra</span><span class="p">,</span>
+        <span class="n">interpolate_flags</span><span class="o">=</span><span class="n">interpolate_flags</span><span class="p">,</span>
+        <span class="n">save_file</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span></div>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>

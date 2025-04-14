@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>lib.interpolate &#8212; Auto Interpolate Spectra April 2025 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for lib.interpolate</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+<span class="kn">from</span> <span class="nn">natsort</span> <span class="kn">import</span> <span class="n">os_sorted</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">more_itertools</span> <span class="kn">import</span> <span class="n">pairwise</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+<div class="viewcode-block" id="SpectrumInterpolator"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator">[docs]</a><span class="k">class</span> <span class="nc">SpectrumInterpolator</span><span class="p">:</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encapsulates the entire interpolation process.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wav_ref</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">delta_params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Initializes the SpectrumInterpolator class.</span>
+<span class="sd">            </span>
+<span class="sd">            :param wav_ref: Wavelength array of reference.</span>
+<span class="sd">            :type wav_ref: numpy.array()</span>
+<span class="sd">            :param target: DataFrame containing the name of the object and its parameters.</span>
+<span class="sd">            :type target: pandas.DataFrame()</span>
+<span class="sd">            :param delta_params: Optional DataFrame describing the parameters steps for the model.</span>
+<span class="sd">            :type delta_params: pandas.DataFrame()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">20</span><span class="o">+</span><span class="s1">&#39; Initializing SpectrumInterpolator &#39;</span><span class="o">+</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">20</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wav_ref</span> <span class="o">=</span> <span class="n">wav_ref</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_params</span> <span class="o">=</span> <span class="n">delta_params</span> <span class="ow">or</span> <span class="p">{</span>
+            <span class="s1">&#39;teff&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>  <span class="c1"># [K]</span>
+            <span class="s1">&#39;logg&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># [dex]</span>
+            <span class="s1">&#39;feh&#39;</span><span class="p">:</span> <span class="mf">0.5</span>    <span class="c1"># [dex]</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;teff&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s1">&#39;teff&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="s1">&#39;logg&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s1">&#39;logg&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="s1">&#39;feh&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s1">&#39;feh&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        
+<div class="viewcode-block" id="SpectrumInterpolator.interp_partial"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.interp_partial">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">interp_partial</span><span class="p">(</span><span class="n">spectrum1</span><span class="p">,</span> <span class="n">spectrum2</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">delta_param</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Linear interpolation between two spectra.</span>
+
+<span class="sd">            :param spectrum1: Flux with lowest parameter value.</span>
+<span class="sd">            :type spectrum1: numpy.array()</span>
+<span class="sd">            :param spectrum2: Flux with highest parameter value.</span>
+<span class="sd">            :type spectrum2: numpy.array()</span>
+<span class="sd">            :param factor: Amount to increase.</span>
+<span class="sd">            :type factor: float or int</span>
+<span class="sd">            :param delta_param: Model&#39;s parameter step</span>
+<span class="sd">            :type delta_param: float or int</span>
+<span class="sd">            :return: The interpolated flux.</span>
+<span class="sd">            :rtype: numpy.array()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">spectrum1</span> <span class="o">+</span> <span class="p">(((</span><span class="n">spectrum2</span> <span class="o">-</span> <span class="n">spectrum1</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta_param</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="SpectrumInterpolator.sort_df"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.sort_df">[docs]</a>    <span class="k">def</span> <span class="nf">sort_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Sorts the DataFrame to facilitate the interpolation order.</span>
+
+<span class="sd">            :param df: DataFrame containing all spectra needed for interpolation and their parameters&#39; values.</span>
+<span class="sd">            :type df: pandas.DataFrame()</span>
+<span class="sd">            :param param: Name of the parameter to sort the DataFrame accordingly.</span>
+<span class="sd">            :type param: str</span>
+<span class="sd">            :return: The sorted DataFrame.</span>
+<span class="sd">            :rtype: pandas.DataFrame()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">grouped</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="n">p</span> <span class="o">!=</span> <span class="n">param</span><span class="p">])</span>
+        
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">grouped</span><span class="p">:</span>
+            <span class="n">min_row</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="p">[</span><span class="n">param</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()]</span>
+            <span class="n">max_row</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="p">[</span><span class="n">param</span><span class="p">]</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()]</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">min_row</span><span class="p">,</span> <span class="n">max_row</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="k">if</span> <span class="n">results</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="SpectrumInterpolator.load_and_interpolate_spectrum"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.load_and_interpolate_spectrum">[docs]</a>    <span class="k">def</span> <span class="nf">load_and_interpolate_spectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spectrum_row</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Loads spectrum from file and interpolates its flux into the wavelength array of reference.</span>
+
+<span class="sd">            :param spectrum_row: DataFrame row containing the path to the spectrum of interest.</span>
+<span class="sd">            :type spectrum_row: pandas.DataFrame()</span>
+<span class="sd">            :return: The interpolated flux.</span>
+<span class="sd">            :rtype: numpy.array()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">wav</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cwd</span> <span class="o">+</span> <span class="n">spectrum_row</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wav_ref</span><span class="p">,</span> <span class="n">wav</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SpectrumInterpolator.combine_dicts"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.combine_dicts">[docs]</a>    <span class="k">def</span> <span class="nf">combine_dicts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dict_list</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Combines multiple dictionaries and merged them into a DataFrame.</span>
+
+<span class="sd">            :param dict_list: List of dictionaries to combine.</span>
+<span class="sd">            :type dict_list: list[dict]</span>
+<span class="sd">            :return: The combined DataFrame.</span>
+<span class="sd">            :rtype: pandas.DataFrame()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">combined</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dict_list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">combined</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">combined</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SpectrumInterpolator.check_spectra_availability"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.check_spectra_availability">[docs]</a>    <span class="k">def</span> <span class="nf">check_spectra_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interpolate_flags</span><span class="p">,</span> <span class="n">spectra</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.</span>
+
+<span class="sd">            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.</span>
+<span class="sd">            :type interpolate_flags: pandas.DataFrame()</span>
+<span class="sd">            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters&#39; values.</span>
+<span class="sd">            :type spectra: pandas.DataFrame()</span>
+<span class="sd">            :return: True of False</span>
+<span class="sd">            :rtype: bool</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking spectra availability...&#39;</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">interpolate_flags</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="c1"># number of parameters to interpolate</span>
+
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spectra</span><span class="p">)</span> <span class="c1"># number of spectra available</span>
+
+        <span class="k">if</span> <span class="n">N</span> <span class="o">!=</span> <span class="mi">2</span><span class="o">**</span><span class="n">n</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+    
+<div class="viewcode-block" id="SpectrumInterpolator.interp_param"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.interp_param">[docs]</a>    <span class="k">def</span> <span class="nf">interp_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Interpolates the spectra based on a specific parameter.</span>
+
+<span class="sd">            :param df: Sorted DataFrame containing all spectra needed for interpolation and their parameters&#39; values.</span>
+<span class="sd">            :type df: pandas.DataFrame()</span>
+<span class="sd">            :param param: Name of the parameter to interpolate.</span>
+<span class="sd">            :type param: str</span>
+<span class="sd">            :return: List of dictionaries stating the updated parameters at each interpolation and the interpolated flux.</span>
+<span class="sd">            :rtype: list[dict]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">interp_steps</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># This will storage each dictionary with updated parameters and the corresponding interpolated flux</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Interpolating &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">)):</span>
+            <span class="n">row1</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># First row of the pair</span>
+            <span class="n">row2</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>  <span class="c1"># Second row (if exists)</span>
+            
+            <span class="k">if</span> <span class="n">row2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">spec1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_and_interpolate_spectrum</span><span class="p">(</span><span class="n">row1</span><span class="p">)</span> <span class="c1"># This will work only for the first interpolated parameter</span>
+                <span class="n">spec2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_and_interpolate_spectrum</span><span class="p">(</span><span class="n">row2</span><span class="p">)</span>
+
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">spec1</span> <span class="o">=</span> <span class="n">row1</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="c1"># Then for the rest of the parameters this should work</span>
+                <span class="n">spec2</span> <span class="o">=</span> <span class="n">row2</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span>
+
+            <span class="n">factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">-</span> <span class="n">row1</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="c1"># Desidered value - minimum parameter value</span>
+
+            <span class="n">interp_flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_partial</span><span class="p">(</span>
+                <span class="n">spec1</span><span class="p">,</span>
+                <span class="n">spec2</span><span class="p">,</span>
+                <span class="n">factor</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delta_params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="n">dic</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="n">param</span> <span class="k">else</span> <span class="n">row1</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span> <span class="c1"># It can be row1 or row2 because the parameters&#39; values are the same</span>
+            <span class="n">dic</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">interp_flux</span>
+
+            <span class="n">interp_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dic</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">interp_steps</span></div>
+
+    
+<div class="viewcode-block" id="SpectrumInterpolator.interpolate_spectra"><a class="viewcode-back" href="../../lib.html#lib.interpolate.SpectrumInterpolator.interpolate_spectra">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate_spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spectra</span><span class="p">,</span> <span class="n">interpolate_flags</span><span class="p">,</span> <span class="n">save_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Main interpolation function.</span>
+
+<span class="sd">            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters&#39; values.</span>
+<span class="sd">            :type spectra: pandas.DataFrame()</span>
+<span class="sd">            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.</span>
+<span class="sd">            :type interpolate_flags: pandas.DataFrame() </span>
+<span class="sd">            :param save_file: Flag to indicate whether to save the interpolated spectrum in a CSV file.</span>
+<span class="sd">            :type save_file: bool</span>
+<span class="sd">            :return: List of DataFrames containing updated parameters and fluxes at each interpolation step.</span>
+<span class="sd">            :rtype: list[pandas.DataFrame]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s1">&#39;star&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Check if we have all required spectra</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_spectra_availability</span><span class="p">(</span><span class="n">interpolate_flags</span><span class="p">,</span> <span class="n">spectra</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;All spectra available!&#39;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Missing spectra for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># Perform the interpolation</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">condition</span> <span class="ow">in</span> <span class="n">interpolate_flags</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+
+            <span class="k">if</span> <span class="n">condition</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="c1"># Checks whether the current parameter needs to be interpolated</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">source</span> <span class="o">=</span> <span class="n">spectra</span> <span class="c1"># Original dataframe retrieved from filtering the database</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">source</span> <span class="o">=</span> <span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Gets latest dataframe after first interpolation loop</span>
+
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sort_df</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="c1"># Sorts dataframe </span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_param</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="c1"># Interpolates current parameter</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">combine_dicts</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="c1"># Combine dictionaries to create a new dataframe with updated values after interpolation</span>
+                <span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">40</span><span class="o">+</span><span class="s1">&#39; Finish! &#39;</span><span class="o">+</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">40</span><span class="p">)</span>        
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Result:&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">89</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">save_file</span><span class="p">:</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">+</span><span class="s1">&#39;/output/interp_spectra/&#39;</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;wavelength&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">wav_ref</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">:</span> <span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()})</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}{</span><span class="n">name</span><span class="si">}</span><span class="s2">_interp.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">steps</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Auto Interpolate Spectra</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2025, Micah G. C. Navia.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

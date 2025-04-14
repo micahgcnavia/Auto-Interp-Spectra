@@ -6,16 +6,26 @@ import os
 from tqdm import tqdm
 from more_itertools import pairwise
 from collections import defaultdict
-from lib.plotting import graph
 
 class SpectrumInterpolator:
+
+    """
+        Encapsulates the entire interpolation process.
+    
+    """
+
     def __init__(self, wav_ref, target, delta_params=None):
+
         """
-        Initialize the SpectrumInterpolator with reference wavelength and optional delta parameters.
-        
-        Args:
-            wav_ref (array): Reference wavelength array
-            delta_params (dict): Dictionary of parameter deltas (default: {'teff': 100, 'logg': 0.5, 'feh': 0.5})
+            Initializes the SpectrumInterpolator class.
+            
+            :param wav_ref: Wavelength array of reference.
+            :type wav_ref: numpy.array()
+            :param target: DataFrame containing the name of the object and its parameters.
+            :type target: pandas.DataFrame()
+            :param delta_params: Optional DataFrame describing the parameters steps for the model.
+            :type delta_params: pandas.DataFrame()
+
         """
 
         print('='*20+' Initializing SpectrumInterpolator '+'='*20+'\n')
@@ -37,13 +47,38 @@ class SpectrumInterpolator:
         
     @staticmethod
     def interp_partial(spectrum1, spectrum2, factor, delta_param):
+
         """
-        Linear interpolation between two spectra.
+            Linear interpolation between two spectra.
+
+            :param spectrum1: Flux with lowest parameter value.
+            :type spectrum1: numpy.array()
+            :param spectrum2: Flux with highest parameter value.
+            :type spectrum2: numpy.array()
+            :param factor: Amount to increase.
+            :type factor: float or int
+            :param delta_param: Model's parameter step
+            :type delta_param: float or int
+            :return: The interpolated flux.
+            :rtype: numpy.array()
+
         """
 
         return spectrum1 + (((spectrum2 - spectrum1) * factor) / delta_param)
     
     def sort_df(self, df, param):
+
+        """
+            Sorts the DataFrame to facilitate the interpolation order.
+
+            :param df: DataFrame containing all spectra needed for interpolation and their parameters' values.
+            :type df: pandas.DataFrame()
+            :param param: Name of the parameter to sort the DataFrame accordingly.
+            :type param: str
+            :return: The sorted DataFrame.
+            :rtype: pandas.DataFrame()
+
+        """
 
         results = []
         
@@ -57,14 +92,31 @@ class SpectrumInterpolator:
         return pd.DataFrame(results) if results else pd.DataFrame()
     
     def load_and_interpolate_spectrum(self, spectrum_row):
+
         """
-        Load spectrum from file and interpolate to wavelength resolution of reference.
+            Loads spectrum from file and interpolates its flux into the wavelength array of reference.
+
+            :param spectrum_row: DataFrame row containing the path to the spectrum of interest.
+            :type spectrum_row: pandas.DataFrame()
+            :return: The interpolated flux.
+            :rtype: numpy.array()
+
         """
 
         wav, spec = np.loadtxt(self.cwd + spectrum_row['path'], unpack=True)
         return np.interp(self.wav_ref, wav, spec)
 
     def combine_dicts(self, dict_list):
+
+        """
+            Combines multiple dictionaries and merged them into a DataFrame.
+
+            :param dict_list: List of dictionaries to combine.
+            :type dict_list: list[dict]
+            :return: The combined DataFrame.
+            :rtype: pandas.DataFrame()
+
+        """
 
         combined = defaultdict(list)
         for d in dict_list:
@@ -74,9 +126,19 @@ class SpectrumInterpolator:
         return pd.DataFrame(dict(combined))
 
     def check_spectra_availability(self, interpolate_flags, spectra):
+
         """
-        Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
+            Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
+
+            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.
+            :type interpolate_flags: pandas.DataFrame()
+            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters' values.
+            :type spectra: pandas.DataFrame()
+            :return: True of False
+            :rtype: bool
+
         """
+
         print('Checking spectra availability...')
         n = interpolate_flags.sum().sum() # number of parameters to interpolate
 
@@ -89,6 +151,18 @@ class SpectrumInterpolator:
             return True
     
     def interp_param(self, df, param):
+
+        """
+            Interpolates the spectra based on a specific parameter.
+
+            :param df: Sorted DataFrame containing all spectra needed for interpolation and their parameters' values.
+            :type df: pandas.DataFrame()
+            :param param: Name of the parameter to interpolate.
+            :type param: str
+            :return: List of dictionaries stating the updated parameters at each interpolation and the interpolated flux.
+            :rtype: list[dict]
+
+        """
 
         interp_steps = [] # This will storage each dictionary with updated parameters and the corresponding interpolated flux
 
@@ -124,22 +198,22 @@ class SpectrumInterpolator:
         return interp_steps
 
     
-    def interpolate_spectra(self, spectra, interpolate_flags, show_graphs=False, save_file=False, save_fig=False):
-        """
-        Main interpolation method.
+    def interpolate_spectra(self, spectra, interpolate_flags, save_file=False):
         
-        Args:
-            target: DataFrame with target parameters
-            spectra: DataFrame of spectra to use for interpolation
-            interpolate_flags: Dictionary with flags for which parameters to interpolate
-            show_graphs: Whether to show interpolation graphs
-            save_file: Whether to save the interpolated spectrum
-            save_fig: Whether to save the graphs
-            path: Path to save files (required if save_file or save_fig is True)
-            
-        Returns:
-            Dictionary with interpolation results and steps
         """
+            Main interpolation function.
+
+            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters' values.
+            :type spectra: pandas.DataFrame()
+            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.
+            :type interpolate_flags: pandas.DataFrame() 
+            :param save_file: Flag to indicate whether to save the interpolated spectrum in a CSV file.
+            :type save_file: bool
+            :return: List of DataFrames containing updated parameters and fluxes at each interpolation step.
+            :rtype: list[pandas.DataFrame]
+        
+        """
+
         name = self.target['star'].item().strip().lower()
 
         # Check if we have all required spectra
@@ -174,10 +248,6 @@ class SpectrumInterpolator:
         print('Result:')
         print(steps[-1])
         print('='*89)
-
-        # Handle output options
-        if show_graphs:
-            graph(name, steps, self.wav_ref, self.cwd, save_fig=save_fig)
         
         if save_file:
 
@@ -188,7 +258,7 @@ class SpectrumInterpolator:
             except:
                 pass
 
-            df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux']})
+            df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux'].item()})
             df.to_csv(f"{path}{name}_interp.csv", index=False)
         
         return steps

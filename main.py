@@ -5,6 +5,10 @@ from lib.interpolate import *
 import os
 
 def main():
+    """
+    Runs the interpolation pipeline.
+
+    """
 
     cwd = os.getcwd()
     path = cwd+'/example/'
@@ -23,9 +27,7 @@ def main():
     result = interpolator.interpolate_spectra(
         spectra=spectra,
         interpolate_flags=interpolate_flags,
-        show_graphs=False,
-        save_fig=False,
-        save_file=False
+        save_file=True
     )
 
 if __name__ == "__main__":

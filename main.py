@@ -8,6 +8,9 @@ def main():
     """
     Runs the interpolation pipeline.
 
+    :return: Original DataFrame with raw spectra and a list of DataFrames containing updated parameters and fluxes at each interpolation step.
+    :rtype: pandas.DataFrame, list[pandas.DataFrame]
+    
     """
 
     cwd = os.getcwd()
@@ -27,8 +30,10 @@ def main():
     result = interpolator.interpolate_spectra(
         spectra=spectra,
         interpolate_flags=interpolate_flags,
-        save_file=True
+        save_file=False
     )
+
+    return spectra, result
 
 if __name__ == "__main__":
     main()

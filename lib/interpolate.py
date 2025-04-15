@@ -28,7 +28,7 @@ class SpectrumInterpolator:
 
         """
 
-        print('='*20+' Initializing SpectrumInterpolator '+'='*20+'\n')
+        print('='*27+' Initializing SpectrumInterpolator '+'='*27+'\n')
         self.wav_ref = wav_ref
         self.delta_params = delta_params or {
             'teff': 100,  # [K]

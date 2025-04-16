@@ -6,10 +6,10 @@ import os
 
 def main():
     """
-    Runs the interpolation pipeline.
+        Runs the interpolation pipeline.
 
-    :return: Original DataFrame with raw spectra and a list of DataFrames containing updated parameters and fluxes at each interpolation step.
-    :rtype: pandas.DataFrame, list[pandas.DataFrame]
+        :return: A list of DataFrames containing updated parameters and fluxes at each interpolation step.
+        :rtype: list[pandas.DataFrame]
     
     """
 
@@ -33,7 +33,7 @@ def main():
         save_file=False
     )
 
-    return spectra, result
+    return result
 
 if __name__ == "__main__":
     main()

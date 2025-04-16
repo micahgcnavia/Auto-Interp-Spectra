@@ -1,182 +1,76 @@
 import pandas as pd
 import numpy as np
-from ipywidgets import *
-from IPython.display import display
-import os
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-from matplotlib import rcParams
-rcParams['font.family'] = 'serif'
-rcParams['font.serif'] = ['Times New Roman']
+from bokeh.plotting import figure, show
+from bokeh.models import CheckboxGroup, CustomJS, ColumnDataSource, RangeSlider
+from bokeh.layouts import column, row
+from bokeh.palettes import Category10
+from bokeh.io import output_notebook
 
-cwd = os.getcwd()
-path = cwd+'/example/'
+def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600):
 
-wav, flux = np.loadtxt(cwd+'/database/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt', unpack=True)
+    """
+        Creates an interactive plots displaying all interpolated spectra with Bokeh.
 
-def graph(x_lim=None):
+        :param interp_steps: List of DataFrames containing updated parameters and fluxes at each interpolation step.
+        :type interp_steps: list[pandas.DataFrame]
+        :param wav_ref: Wavelength array of reference.
+        :type wav_ref: numpy.ndarray
+        :param width: Width of the figure. Default = 1400.
+        :type width: int
+        :param height:  Height of the figure. Default = 600.
+        :type height: int
+        :param line_width: Line width. Default = 1.5.
+        :type line_width: float
+        :param x_start: Start wavelength in Ansgstroms. Default = 6550.
+        :type x_start: int
+        :param x_end: End wavelength in Ansgstroms. Default = 6600.
+        :type x_end: int
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(wav, flux, 'k-')
+    """
 
-    x_lim = np.arange(6000,7000,500)
-    plt.xlim(x_lim)
-    plt.show()
+    # Initialize Bokeh in notebook
+    output_notebook()
 
+    # Create ColumnDataSources for each spectrum
+    sources = {'Teff = {} K, log g = {} dex, [Fe/H] = {} dex'.format(col[0], col[1], col[2]): ColumnDataSource(data={'wav': wav_ref, 'flux': col[3]})\
+                for i in range(len(interp_steps)) for _, col in interp_steps[i].iterrows()}
 
-interact(graph, x_lim = (6000, 8000, 500))
-plt.show()
+    # Create figure
+    p = figure(width=width, height=height, tools="pan,wheel_zoom,box_zoom,reset",
+            title="Multi-Spectra Viewer", x_axis_label='Wavelength (Å)', 
+            y_axis_label='Flux (erg/cm²/s/Å)')
 
+    # Plot all spectra initially (but we'll control visibility)
+    renderers = {}
+    colors = Category10[len(sources)]
 
+    for i, (name, source) in enumerate(sources.items()):
+        renderers[name] = p.line('wav', 'flux', source=source, line_width=line_width,
+                                color=colors[i], alpha=0.8, legend_label=name,
+                                muted_color=colors[i], muted_alpha=0.1)
 
+    # Configure visual elements
 
+    p.x_range.start = x_start
+    p.x_range.end = x_end
+    p.xgrid.grid_line_color = 'lightgray'
+    p.ygrid.grid_line_color = 'lightgray'
+    p.legend.location = "top_right"
+    p.legend.click_policy = "mute"  # Click on legend to mute/unmute
 
-# def graph(name, interp, wav_ref, cwd, save_fig=False):
+    # Add range slider for wavelength control
+    range_slider = RangeSlider(start=600, end=10000, value=(x_start, x_end), step=50,
+                            title="Wavelength Range (Å)", width=300)
 
-#     """
-#     Plots raw and interpolated spectra.
-#     name: string com o nome do alvo
-#     interp: dicionários com todas as informações dos espectrus crus e interpolados
-#     """
-#     x_lower, x_higher = [6552.5/1e4, 6657/1e4]
-#     y_lower, y_higher = [0.7e7/1e4, 0.9e7/1e4]
+    range_callback = CustomJS(args=dict(x_range=p.x_range), code="""
+        x_range.start = cb_obj.value[0];
+        x_range.end = cb_obj.value[1];
+    """)
 
-#     lw=1
+    range_slider.js_on_change('value', range_callback)
 
-#     path = cwd+'/output/plots/'
+    # Combine all elements
+    controls = row(range_slider)
+    layout = column(controls, p)
 
-#     if 'interp2_spec' not in interp.keys():
-
-#         x_lower, x_higher = [6552.5/1e4, 6657/1e4]
-#         y_lower, y_higher = [0.6e7/1e4, 0.73e7/1e4]
-
-#         fig, ax = plt.subplots(1,figsize=(14,6))
-
-#         fig.set(facecolor='white')
-
-#         plt.title('Interpolation for '+name, fontsize='xx-large', y=1)
-        
-#         #ax.yaxis.tick_right()
-
-#         for raw_spec, raw_param in zip(interp['raw_spec'], interp['raw_params']):
-
-#             ax.plot(wav_ref/1e4,raw_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(raw_param[0]))+' K, log g = '+
-#                      str(raw_param[1]).replace('.', ',')+', [Fe/H] = '+str(raw_param[2]).replace(',', '.'))
-
-#         ax.plot(wav_ref/1e4,interp['final_spec']/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp['final_params'][0]))+' K, log g = '+
-#                  str(interp['final_params'][1]).replace('.', ',')+', [Fe/H] = '+str(interp['final_params'][2]).replace(',', '.'))
-        
-#         ax.legend(fontsize = 13, loc='upper center', bbox_to_anchor=(0.5, 1.0),
-#                fancybox=False, ncol=3, frameon=False)
-    
-#         ax.set_xlim(x_lower, x_higher)
-#         ax.set_ylim(y_lower, y_higher)
-#         ax.locator_params(axis='y', nbins=5)
-#         plt.tick_params(labelcolor='k', which='both', top=False,
-#                     bottom=True, left=False, right=True, labelsize='large')
-    
-#         plt.xlabel("Comprimento de onda (μm)",fontsize = 'x-large')
-#         plt.ylabel("Fluxo (erg/cm^2/s/μm)",fontsize = 'x-large')
-    
-#         plt.tight_layout()
-    
-#         if save_fig:
-
-#             try:
-
-#                 os.mkdir(path)
-
-#             except:
-#                 print('OPS')
-        
-#             plt.savefig(path+'interp_'+name+'.png', bbox_inches = 'tight',dpi = 300)
-        
-#         plt.show()
-
-#     else:
-    
-#         fig, (ax1, ax2) = plt.subplots(2,figsize=(18,12), sharex=True)
-    
-#         fig.set(facecolor='white')
-    
-#         fig.suptitle('Interpolation for '+name, fontsize='xx-large',x=0.5,y=0.97)
-        
-#         #ax1.yaxis.tick_right()
-    
-#         for raw_spec, raw_param in zip(interp['raw_spec'], interp['raw_params']):
-    
-#             ax1.plot(wav_ref/1e4,raw_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(raw_param[0]))+' K, log g = '+
-#                      str(raw_param[1]).replace(',', '.')+', [Fe/H] = '+str(raw_param[2]).replace(',', '.'))
-
-#         line_styles = ['--', '-', '-.', ':']
-        
-#         for interp_spec, interp_param, ls in zip(interp['interp2_spec'], interp['interp2_params'], line_styles):
-    
-#             ax1.plot(wav_ref/1e4,interp_spec/1e4, c='k', ls=ls, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
-#                      str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.'))
-        
-#         ax1.legend(fontsize = 13, loc='upper center', bbox_to_anchor=(0.5, 1.0),
-#                    fancybox=False, ncol=3, frameon=False)
-        
-#         ax1.set_xlim(x_lower, x_higher)
-#         ax1.set_ylim(y_lower, y_higher)
-#         ax1.locator_params(axis='y', nbins=5)
-#         ax1.tick_params(axis='both', which='major', labelsize=18)
-#         plt.setp(ax1.get_yticklabels()[0], visible=False)
-            
-#         #ax2.yaxis.tick_right()
-    
-#         if 'interp3_spec' not in interp.keys():
-    
-#             for interp_spec, interp_param in zip(interp['interp2_spec'], interp['interp2_params']):
-        
-#                 ax2.plot(wav_ref/1e4,interp_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
-#                          str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.'))
-    
-#         else:
-    
-#             for interp_spec, interp_param in zip(interp['interp2_spec'], interp['interp2_params']):
-    
-#                 ax2.plot(wav_ref/1e4,interp_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp_param[0]))+' K, log g = '+
-#                          str(interp_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp_param[2]).replace(',', '.')) 
-    
-#             for interp2_spec, interp2_param in zip(interp['interp3_spec'], interp['interp3_params']):
-    
-#                 ax2.plot(wav_ref/1e4,interp2_spec/1e4, lw=lw, label = '$T_{ef}$ = '+str(int(interp2_param[0]))+' K, log g = '+
-#                          str(interp2_param[1]).replace(',', '.')+', [Fe/H] = '+str(interp2_param[2]).replace(',', '.'))
-    
-#         ax2.plot(wav_ref/1e4,interp['final_spec']/1e4, c='k', lw=lw, label = '$T_{ef}$ = '+str(int(interp['final_params'][0]))+' K, log g = '+
-#                      str(interp['final_params'][1]).replace(',', '.')+', [Fe/H] = '+str(interp['final_params'][2]).replace(',', '.'))
-        
-#         ax2.legend(fontsize = 13, loc='upper center',bbox_to_anchor=(0.5, 1.0),
-#                   fancybox=False, ncol=3, frameon=False)
-    
-#         ax2.set_xlim(x_lower, x_higher)
-#         ax2.set_ylim(y_lower, y_higher)
-#         ax2.locator_params(axis='y', nbins=5)
-#         ax2.tick_params(axis='both', which='major', labelsize=18)
-        
-#         fig.add_subplot(111, frameon=False)
-        
-#         plt.tick_params(labelcolor='none', which='both', top=False,
-#                         bottom=False, left=False, right=False)
-
-#         plt.xlabel("Wavelength (μm)",fontsize = 26, labelpad=12)
-#         plt.ylabel("Flux (erg/s/cm²/μm)",fontsize = 27, labelpad=22)
-    
-#         plt.tight_layout()
-#         plt.subplots_adjust(wspace=0, hspace=0)
-    
-#         if save_fig:
-
-#             try:
-
-#                 os.mkdir(path)
-
-#             except:
-#                 pass
-    
-#             plt.savefig(path+'interp_'+name+'.png', bbox_inches = 'tight',dpi = 300)
-        
-#         plt.show()
-
+    show(layout)

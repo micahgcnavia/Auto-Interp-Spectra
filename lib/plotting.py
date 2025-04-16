@@ -6,7 +6,7 @@ from bokeh.layouts import column, row
 from bokeh.palettes import Category10
 from bokeh.io import output_notebook
 
-def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600):
+def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600, start=6200, end=6800):
 
     """
         Creates an interactive plots displaying all interpolated spectra with Bokeh.
@@ -21,10 +21,14 @@ def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, 
         :type height: int
         :param line_width: Line width. Default = 1.5.
         :type line_width: float
-        :param x_start: Start wavelength in Ansgstroms. Default = 6550.
+        :param x_start: Start wavelength in Ansgstroms (Å). Default = 6550 Å.
         :type x_start: int
-        :param x_end: End wavelength in Ansgstroms. Default = 6600.
+        :param x_end: End wavelength in Ansgstroms (Å). Default = 6600 Å.
         :type x_end: int
+        :param start: Lower limit of the wavelength in Angstroms (Å) to display on the plot. Default = 6200 Å.
+        :type start: int
+        :param end: Upper limit of the wavelength in Angstroms (Å) to display on the plot. Default = 6800 Å.
+        :type end: int
 
     """
 
@@ -59,8 +63,8 @@ def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, 
     p.legend.click_policy = "mute"  # Click on legend to mute/unmute
 
     # Add range slider for wavelength control
-    range_slider = RangeSlider(start=600, end=10000, value=(x_start, x_end), step=50,
-                            title="Wavelength Range (Å)", width=300)
+    range_slider = RangeSlider(start=start, end=end, value=(x_start, x_end), step=50,
+                            title="Wavelength Range (Å)", width=600)
 
     range_callback = CustomJS(args=dict(x_range=p.x_range), code="""
         x_range.start = cb_obj.value[0];

@@ -190,10 +190,10 @@ class SpectrumInterpolator:
                 self.delta_params[param]
             )
 
-            dic = {key: self.params[param] if key == param else row1[key] for key in self.parameters} # It can be row1 or row2 because the parameters' values are the same
-            dic['flux'] = interp_flux
+            data = {key: self.params[param] if key == param else row1[key] for key in self.parameters} # It can be row1 or row2 because the parameters' values are the same
+            data['flux'] = interp_flux
 
-            interp_steps.append(dic)
+            interp_steps.append(data)
 
         return interp_steps
 

@@ -1,9 +1,0 @@
-teff,logg,feh,alpha,path
-5100,4.5,0.5,0,/database/lte051-4.5+0.5a+0.0.BT-NextGen.7.dat.txt
-5100,4.5,0,0,/database/lte051-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
-5100,5,0.5,0,/database/lte051-5.0+0.5a+0.0.BT-NextGen.7.dat.txt
-5100,5,0,0,/database/lte051-5.0-0.0a+0.0.BT-NextGen.7.dat.txt
-5200,4.5,0.5,0,/database/lte052-4.5+0.5a+0.0.BT-NextGen.7.dat.txt
-5200,4.5,0,0,/database/lte052-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
-5200,5,0.5,0,/database/lte052-5.0+0.5a+0.0.BT-NextGen.7.dat.txt
-5200,5,0,0,/database/lte052-5.0-0.0a+0.0.BT-NextGen.7.dat.txt

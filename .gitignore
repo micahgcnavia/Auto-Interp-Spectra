@@ -1,4 +1,5 @@
 /database
+/output/filtered
 
-all_models.csv
+all_models*
 web_scraping.ipynb

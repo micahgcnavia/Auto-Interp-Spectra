@@ -1,0 +1,15 @@
+teff,logg,feh,alpha,model,path
+4000.0,4.0,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte040-4.0-0.0a+0.0.BT-NextGen.7.dat.txt
+5000.0,4.5,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
+5100.0,4.5,0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte051-4.5+0.5a+0.0.BT-NextGen.7.dat.txt
+5100.0,4.5,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte051-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
+5100.0,5.0,0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte051-5.0+0.5a+0.0.BT-NextGen.7.dat.txt
+5100.0,5.0,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte051-5.0-0.0a+0.0.BT-NextGen.7.dat.txt
+5200.0,4.5,0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte052-4.5+0.5a+0.0.BT-NextGen.7.dat.txt
+5200.0,4.5,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte052-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
+5200.0,5.0,0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte052-5.0+0.5a+0.0.BT-NextGen.7.dat.txt
+5200.0,5.0,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte052-5.0-0.0a+0.0.BT-NextGen.7.dat.txt
+6000.0,4.0,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte060-4.0-0.0a+0.0.BT-NextGen.7.dat.txt
+6000.0,4.0,-0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte060-4.0-0.5a+0.0.BT-NextGen.7.dat.txt
+6000.0,4.5,0.0,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte060-4.5-0.0a+0.0.BT-NextGen.7.dat.txt
+6000.0,4.5,-0.5,0.0,BT-Settl,/home/mariana/Auto-Interp-Spectra/database/bt-settl/lte060-4.5-0.5a+0.0.BT-NextGen.7.dat.txt

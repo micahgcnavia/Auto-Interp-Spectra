@@ -124,31 +124,6 @@ class SpectrumInterpolator:
                 combined[key].append(value)
 
         return pd.DataFrame(dict(combined))
-
-    def check_spectra_availability(self, interpolate_flags, spectra):
-
-        """
-            Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
-
-            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.
-            :type interpolate_flags: pandas.DataFrame
-            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters' values.
-            :type spectra: pandas.DataFrame
-            :return: True of False
-            :rtype: bool
-
-        """
-
-        print('Checking spectra availability...')
-        n = interpolate_flags.sum().sum() # number of parameters to interpolate
-
-        N = len(spectra) # number of spectra available
-
-        if N != 2**n:
-            return False
-
-        else:
-            return True
     
     def interp_param(self, df, param):
 
@@ -214,7 +189,9 @@ class SpectrumInterpolator:
         
         """
 
-        name = self.target['star'].item().strip().lower()
+        objct = list(self.target.columns)[0]
+
+        name = self.target[objct].item().strip().lower()
 
         # Check if we have all required spectra
         if self.check_spectra_availability(interpolate_flags, spectra):
@@ -251,12 +228,8 @@ class SpectrumInterpolator:
         
         if save_file:
 
-            try:
-                path = self.cwd+'/output/interp_spectra/'
-                os.mkdir(path)
-            
-            except:
-                pass
+            path = self.cwd+'/output/interp_spectra/'
+
 
             df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux'].item()})
             df.to_csv(f"{path}{name}_interp.csv", index=False)

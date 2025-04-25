@@ -103,7 +103,7 @@ class SpectrumInterpolator:
 
         """
 
-        wav, spec = np.loadtxt(self.cwd + spectrum_row['path'], unpack=True)
+        wav, spec = np.loadtxt(spectrum_row['path'], unpack=True)
         return np.interp(self.wav_ref, wav, spec)
 
     def combine_dicts(self, dict_list):
@@ -192,14 +192,6 @@ class SpectrumInterpolator:
         objct = list(self.target.columns)[0]
 
         name = self.target[objct].item().strip().lower()
-
-        # Check if we have all required spectra
-        if self.check_spectra_availability(interpolate_flags, spectra):
-            print('All spectra available!')
-
-        else:
-            print(f'Missing spectra for {name}')
-            return None
         
         # Perform the interpolation
 

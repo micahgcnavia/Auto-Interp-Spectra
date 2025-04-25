@@ -244,7 +244,7 @@ def main():
     # Starts Filter class
     filter = Filter()
 
-    filtered_df, interpolate = filter.filter_all(save_all_models=False, save_result=False)
+    filtered_df, interpolate = filter.filter_all(save_all_models=True, save_result=True)
 
     print('\nParameters to interpolate:\n')
 

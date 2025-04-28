@@ -1,0 +1,122 @@
+import pandas as pd
+import numpy as np
+import time
+import ast
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+
+class Scraper():
+
+    """
+        Gets missing spectra from the SVO theoretical models database.
+
+    """
+
+    def __init__(self, model, teff_min, teff_max,
+                              logg_min, logg_max,
+                              feh_min, feh_max):
+
+        """
+            Initializes the Scraper class.
+
+        """
+
+        print('='*27+' Initializing Scraper '+'='*27+'\n')
+
+        self.model = model
+
+        # Parameters minimum and maximum values
+        self.intervals = {
+        'teff': {'min': teff_min, 'max': teff_max},
+        'logg': {'min': logg_min, 'max': logg_max},
+        'meta': {'min': feh_min,  'max': feh_max}
+        }
+
+        # Setting up driver
+        self.service = Service()
+        self.options = webdriver.ChromeOptions()
+        self.driver = webdriver.Chrome(service=self.service, options=self.options)
+        url = f'https://svo2.cab.inta-csic.es/theory/newov2/index.php?models={self.model.strip().lower()}'
+        self.driver.get(url)
+
+    def get_param_range(self, param):
+
+        model = self.model.strip().lower()
+
+        range_list = self.driver.find_element(By.NAME, f"params[{model}][{param}][min]").text.split('\n')
+
+        return np.array([float(value) for value in range_list])
+
+    def select_value(self, key, limit='min', delay=None):
+
+        model = self.model.strip().lower()
+
+        selection = Select(self.driver.find_element(By.NAME, f'params[{model}][{key}][{limit}]'))
+        selection.select_by_visible_text(str(self.intervals[key][limit]))
+
+        time.sleep(delay)
+
+    def search(self, delay=None):
+
+        search_button = self.driver.find_element(By.NAME, 'nres')
+        select_search = Select(search_button)
+
+        # Selecting all spectra available
+        select_search.select_by_value('all')
+
+        time.sleep(delay)
+
+        XPATH = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[1]/table/tbody/tr[5]/td/input'
+
+        self.driver.find_element(By.XPATH, XPATH).click()
+
+        time.sleep(delay)
+
+    def retrieve(self, delay=None):
+
+        mark_all_ASCII = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[2]/table[1]/tbody/tr/td[1]/input'
+        retrieve_button = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[2]/table[1]/tbody/tr/td[4]/input'
+
+        self.driver.find_element(By.XPATH, mark_all_ASCII).click()
+        time.sleep(delay)
+
+        self.driver.find_element(By.XPATH, retrieve_button).click()
+
+def main():
+
+    scraper = Scraper(
+        model = 'BT-Settl',
+        teff_min = 5100,
+        teff_max = 5200,
+        logg_min = 4,
+        logg_max = 4.5,
+        feh_min = 0,
+        feh_max = 0.5
+    )
+
+    print(f'Parameter range for {scraper.model}:')
+
+    labels = {param: name for param, name in zip(list(scraper.intervals.keys()), ['Effective temperature (K)',
+                                                                                  'Surface gravity (dex)',
+                                                                                  'Metallicity (dex)'
+                                                                                 ])}
+
+    for param in list(scraper.intervals.keys()):
+
+        print(f'\n{labels[param]}:\n')
+        print(scraper.get_param_range(param))
+
+        scraper.select_value(param, limit='min', delay=1)
+        scraper.select_value(param, limit='max', delay=1)
+
+    scraper.search(delay=3)
+    scraper.retrieve(delay=3)
+
+    time.sleep(15)
+
+    
+if __name__ == "__main__":
+    main()
+

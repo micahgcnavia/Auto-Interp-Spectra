@@ -5,16 +5,15 @@ from bokeh.models import CheckboxGroup, CustomJS, ColumnDataSource, RangeSlider
 from bokeh.layouts import column, row
 from bokeh.palettes import Category10
 from bokeh.io import output_notebook
+from lib.get_config import *
 
-def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600, start=6200, end=6800):
+def show_spectra(interp_steps, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600, start=6200, end=6800):
 
     """
         Creates an interactive plots displaying all interpolated spectra with Bokeh.
 
         :param interp_steps: List of DataFrames containing updated parameters and fluxes at each interpolation step.
         :type interp_steps: list[pandas.DataFrame]
-        :param wav_ref: Wavelength array of reference.
-        :type wav_ref: numpy.ndarray
         :param width: Width of the figure. Default = 1400.
         :type width: int
         :param height:  Height of the figure. Default = 600.
@@ -31,6 +30,11 @@ def show_spectra(interp_steps, wav_ref, width=1400, height=600, line_width=1.5, 
         :type end: int
 
     """
+    # Getting user data
+    config = get_config()
+
+    wav_ref_path = config['USER_DATA']['reference_spectrum']
+    wav_ref, _ = np.loadtxt(wav_ref_path, unpack=True)
 
     # Initialize Bokeh in notebook
     output_notebook()

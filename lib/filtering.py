@@ -8,7 +8,7 @@ from tqdm import tqdm
 from more_itertools import pairwise
 from functools import reduce
 from collections import defaultdict
-from get_config import *
+from lib.get_config import *
 
 class Filter():
 
@@ -17,48 +17,51 @@ class Filter():
 
     """
 
-    def __init__(self, delta_params=None):
+    def __init__(self):
 
         """
             Initializes the Filter class.
-            
-            :param library: Name of the model library to search for in the database folder.
-            :type library: str
-            :param target: DataFrame containing the name of the object and its parameters.
-            :type target: pandas.DataFrame
-            :param delta_params: Optional DataFrame describing the parameters steps for the model.
-            :type delta_params: pandas.DataFrame
 
         """
 
         print('='*27+' Initializing Filter '+'='*27+'\n')
 
-        # Getting user setup data
+        # Current working directory
+        self.cwd = os.getcwd()
+
+        # Getting user data
         config = get_config()
 
+        # Getting targets
         targets_path = config['USER_DATA']['targets_path']
         targets = pd.read_csv(targets_path)
-        database_path = config['USER_DATA']['database_path']
-        self.library = config['USER_DATA']['library_name'].lower()
-        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # Getting the dictionary
-        #self.save_final_spectra = config.getboolean('SETTINGS', 'save_final_spectra')
-
-        self.cwd = os.getcwd()
-        self.models_list = sorted(glob(database_path+self.library+'/*'))
         target = targets.loc[targets['star'] == 'CoRoT-1'] # This will be replaced by a loop in the future
+        objct = list(target.columns)[0]
+        self.name = target[objct].item().strip() # Target name
+
+        # Getting parameters and model step
+        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # Getting the dictionary
         self.params = {
             'teff': target['teff'].item(),
             'logg': target['logg'].item(),
             'feh': target['feh'].item()
         }
         self.parameters = list(self.params.keys())
-        objct = list(target.columns)[0]
-        self.name = target[objct].item().strip()
+
+        # Getting database and model info
+        database_path = config['USER_DATA']['database_path']
+        self.library = config['USER_DATA']['library_name'].lower()
+        self.models_list = sorted(glob(database_path+self.library+'/*'))
+        
+        #self.save_final_spectra = config.getboolean('SETTINGS', 'save_final_spectra')
+        
+        # Initializing interpolate dictionary
         self.interpolate = {
             'teff': None,
             'logg': None,
             'feh': None}
-        # The conditions to filter the database models will be storaged in this list
+
+        # The conditions to filter the database will be storaged in this list
         self.conditions = []
 
 
@@ -212,13 +215,11 @@ class Filter():
         
         return filtered_df, interpolate
 
-    def check_spectra_availability(self, interpolate_flags, filtered_df):
+    def check_spectra_availability(self, filtered_df):
 
         """
             Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
 
-            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.
-            :type interpolate_flags: pandas.DataFrame
             :param filtered_df: DataFrame containing all spectra needed for interpolation and their parameters' values.
             :type filtered_df: pandas.DataFrame
             :return: True of False
@@ -227,7 +228,7 @@ class Filter():
         """
 
         print('\nChecking spectra availability...')
-        n = interpolate_flags.sum().sum() # number of parameters to interpolate
+        n = self.interpolate_flags.sum().sum() # number of parameters to interpolate
 
         N = len(filtered_df) # number of spectra available
 

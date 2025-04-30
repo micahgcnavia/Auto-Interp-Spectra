@@ -3,10 +3,11 @@ import numpy as np
 from glob import glob
 from natsort import os_sorted
 import os
+import ast
 from tqdm import tqdm
 from more_itertools import pairwise
 from collections import defaultdict
-from get_config import *
+from lib.get_config import *
 
 class SpectrumInterpolator:
 
@@ -15,38 +16,45 @@ class SpectrumInterpolator:
     
     """
 
-    def __init__(self, wav_ref, target, delta_params=None):
+    def __init__(self):
 
         """
             Initializes the SpectrumInterpolator class.
-            
-            :param wav_ref: Wavelength array of reference.
-            :type wav_ref: numpy.ndarray
-            :param target: DataFrame containing the name of the object and its parameters.
-            :type target: pandas.DataFrame
-            :param delta_params: Optional DataFrame describing the parameters steps for the model.
-            :type delta_params: pandas.DataFrame
 
         """
 
         print('='*27+' Initializing SpectrumInterpolator '+'='*27+'\n')
 
-        # Getting user setup data
+        # Current working directory
+        self.cwd = os.getcwd()
+
+        # Getting user data
         config = get_config()
 
+        # Getting targets
         targets_path = config['USER_DATA']['targets_path']
         targets = pd.read_csv(targets_path)
         self.target = targets.loc[targets['star'] == 'CoRoT-1'] # This will be replaced by a loop in the future
+        objct = list(self.target.columns)[0]
+        self.input_name = self.target[objct].item().strip()
+        self.name = self.input_name.lower() # Target name
 
-        self.wav_ref = wav_ref # change
-        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # Getting the dictionary
-        self.cwd = os.getcwd()
+        # Getting filtered data
+        self.spectra = pd.read_csv(self.cwd+f'/output/filtered/{self.name}_data.csv')
+        self.interpolate_flags = pd.read_csv(self.cwd+f'/output/filtered/{self.name}_interpolate.csv')
+
+        # Getting parameters and model step
+        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # try to automate this later
         self.params = {
             'teff': self.target['teff'].item(),
             'logg': self.target['logg'].item(),
             'feh': self.target['feh'].item()
         }
         self.parameters = list(self.params.keys())
+
+        # Importing the reference spectrum
+        wav_ref_path = config['USER_DATA']['reference_spectrum']
+        self.wav_ref, _ = np.loadtxt(wav_ref_path, unpack=True)
 
         
     @staticmethod
@@ -177,36 +185,30 @@ class SpectrumInterpolator:
         return interp_steps
 
     
-    def interpolate_spectra(self, spectra, interpolate_flags, save_file=False):
+    def interpolate_spectra(self, save_file):
         
         """
             Main interpolation function.
 
-            :param spectra: DataFrame containing all spectra needed for interpolation and their parameters' values.
-            :type spectra: pandas.DataFrame
-            :param interpolate_flags: DataFrame specifing which parameters to interpolate based on bool values.
-            :type interpolate_flags: pandas.DataFrame 
             :param save_file: Flag to indicate whether to save the interpolated spectrum in a CSV file.
             :type save_file: bool
             :return: List of DataFrames containing updated parameters and fluxes at each interpolation step.
             :rtype: list[pandas.DataFrame]
         
         """
-
-        objct = list(self.target.columns)[0]
-
-        name = self.target[objct].item().strip().lower()
         
         # Perform the interpolation
 
+        print(f'Interpolating spectra for {self.input_name}\n')
+
         steps = []
 
-        for param, condition in interpolate_flags.iteritems():
+        for param, condition in self.interpolate_flags.iteritems():
 
             if condition[0]: # Checks whether the current parameter needs to be interpolated
 
                 if len(steps) == 0:
-                    source = spectra # Original dataframe retrieved from filtering the database
+                    source = self.spectra # Original dataframe retrieved from filtering the database
                 else:
                     source = steps[-1] # Gets latest dataframe after first interpolation loop
 
@@ -216,11 +218,10 @@ class SpectrumInterpolator:
                 steps.append(df)
             else:
                 pass
-
-        print('='*40+' Finish! '+'='*40)        
-        print('Result:')
-        print(steps[-1])
-        print('='*89)
+    
+        print('\nFinal parameters:')
+        print(steps[-1][self.parameters])
+        print('='*40+' Finish! '+'='*40)
         
         if save_file:
 
@@ -228,6 +229,20 @@ class SpectrumInterpolator:
 
 
             df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux'].item()})
-            df.to_csv(f"{path}{name}_interp.csv", index=False)
+            df.to_csv(f"{path}{self.name}_interp.csv", index=False)
         
         return steps
+
+def main(save_file=False):
+
+    # Initializes interpolator
+    interpolator = SpectrumInterpolator()
+
+    # Performs interpolation
+    result = interpolator.interpolate_spectra(save_file=save_file)
+
+    return result
+
+
+if __name__ == "__main__":
+    main()

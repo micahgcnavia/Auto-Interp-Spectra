@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 from more_itertools import pairwise
 from collections import defaultdict
+from get_config import *
 
 class SpectrumInterpolator:
 
@@ -29,14 +30,17 @@ class SpectrumInterpolator:
         """
 
         print('='*27+' Initializing SpectrumInterpolator '+'='*27+'\n')
-        self.wav_ref = wav_ref
-        self.delta_params = delta_params or {
-            'teff': 100,  # [K]
-            'logg': 0.5,  # [dex]
-            'feh': 0.5    # [dex]
-        }
+
+        # Getting user setup data
+        config = get_config()
+
+        targets_path = config['USER_DATA']['targets_path']
+        targets = pd.read_csv(targets_path)
+        self.target = targets.loc[targets['star'] == 'CoRoT-1'] # This will be replaced by a loop in the future
+
+        self.wav_ref = wav_ref # change
+        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # Getting the dictionary
         self.cwd = os.getcwd()
-        self.target = target
         self.params = {
             'teff': self.target['teff'].item(),
             'logg': self.target['logg'].item(),

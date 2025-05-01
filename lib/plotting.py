@@ -5,7 +5,7 @@ from bokeh.models import CheckboxGroup, CustomJS, ColumnDataSource, RangeSlider
 from bokeh.layouts import column, row
 from bokeh.palettes import Category10
 from bokeh.io import output_notebook
-from lib.get_config import *
+from lib.get_input_data import *
 
 def show_spectra(interp_steps, width=1400, height=600, line_width=1.5, x_start=6550, x_end=6600, start=6200, end=6800):
 
@@ -31,10 +31,8 @@ def show_spectra(interp_steps, width=1400, height=600, line_width=1.5, x_start=6
 
     """
     # Getting user data
-    config = get_config()
-
-    wav_ref_path = config['USER_DATA']['reference_spectrum']
-    wav_ref, _ = np.loadtxt(wav_ref_path, unpack=True)
+    data = Input()
+    wav_ref = data.wav_ref
 
     # Initialize Bokeh in notebook
     output_notebook()

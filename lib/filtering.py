@@ -8,7 +8,7 @@ from tqdm import tqdm
 from more_itertools import pairwise
 from functools import reduce
 from collections import defaultdict
-from lib.get_config import *
+from lib.scraping import *
 
 class Filter():
 
@@ -23,43 +23,19 @@ class Filter():
             Initializes the Filter class.
 
         """
+        Input.__init__(self)
 
         print('='*27+' Initializing Filter '+'='*27+'\n')
 
-        # Current working directory
-        self.cwd = os.getcwd()
+        scraper = Scraper()
 
-        # Getting user data
-        config = get_config()
-
-        # Getting targets
-        targets_path = config['USER_DATA']['targets_path']
-        targets = pd.read_csv(targets_path)
-        target = targets.loc[targets['star'] == 'CoRoT-1'] # This will be replaced by a loop in the future
-        objct = list(target.columns)[0]
-        self.name = target[objct].item().strip() # Target name
-
-        # Getting parameters and model step
-        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # Getting the dictionary
-        self.params = {
-            'teff': target['teff'].item(),
-            'logg': target['logg'].item(),
-            'feh': target['feh'].item()
-        }
-        self.parameters = list(self.params.keys())
-
-        # Getting database and model info
-        database_path = config['USER_DATA']['database_path']
-        self.library = config['USER_DATA']['library_name'].lower()
-        self.models_list = sorted(glob(database_path+self.library+'/*'))
-        
-        #self.save_final_spectra = config.getboolean('SETTINGS', 'save_final_spectra')
+        self.delta_params = scraper.get_delta_params()
         
         # Initializing interpolate dictionary
         self.interpolate = {
             'teff': None,
             'logg': None,
-            'feh': None}
+            'meta': None}
 
         # The conditions to filter the database will be storaged in this list
         self.conditions = []
@@ -131,11 +107,9 @@ class Filter():
 
         df = pd.DataFrame(models)
 
-        df = df.rename(columns= {'meta': 'feh'}) # just to assure consistency with the interpolate.py script
-
         if save:
 
-            df.to_csv(self.cwd+'/all_models_'+self.library+'.csv', index=False)
+            df.to_csv(self.cwd+'/all_models_'+self.model.lower()+'.csv', index=False)
 
         return df
 
@@ -183,7 +157,7 @@ class Filter():
         try:
 
             # Reads the file if it already exists
-            all_models = pd.read_csv(self.cwd+f'/all_models_{self.library}.csv')
+            all_models = pd.read_csv(self.cwd+f'/all_models_{self.model.lower()}.csv')
 
         except:
 
@@ -215,7 +189,7 @@ class Filter():
         
         return filtered_df, interpolate
 
-    def check_spectra_availability(self, filtered_df):
+    def check_spectra_availability(self, interpolate, filtered_df):
 
         """
             Checks whether we have all spectra needed for interpolation based on the number of parameters to interpolate.
@@ -228,7 +202,7 @@ class Filter():
         """
 
         print('\nChecking spectra availability...')
-        n = self.interpolate_flags.sum().sum() # number of parameters to interpolate
+        n = interpolate.sum().sum() # number of parameters to interpolate
 
         N = len(filtered_df) # number of spectra available
 
@@ -240,7 +214,7 @@ class Filter():
             print('All spectra available!')
             return True
 
-def main():
+def filter_database():
 
     # Starts Filter class
     filter = Filter()
@@ -254,6 +228,10 @@ def main():
         if interpolate[param].item():
             print('->', param)
 
+    print('\nModel step for each parameter:\n')
+
+    print(filter.delta_params)
+
     if filter.check_spectra_availability(interpolate, filtered_df):
 
         print('\nSpectra needed for interpolation:\n')
@@ -265,4 +243,4 @@ def main():
         pass
 
 if __name__ == "__main__":
-    main()
+    filter_database()

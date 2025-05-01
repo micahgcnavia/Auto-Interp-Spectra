@@ -7,7 +7,7 @@ import ast
 from tqdm import tqdm
 from more_itertools import pairwise
 from collections import defaultdict
-from lib.get_config import *
+from lib.scraping import *
 
 class SpectrumInterpolator:
 
@@ -23,39 +23,17 @@ class SpectrumInterpolator:
 
         """
 
-        print('='*27+' Initializing SpectrumInterpolator '+'='*27+'\n')
+        Input.__init__(self)
 
-        # Current working directory
-        self.cwd = os.getcwd()
+        print('='*20+' Initializing SpectrumInterpolator '+'='*20+'\n')
 
-        # Getting user data
-        config = get_config()
+        scraper = Scraper()
 
-        # Getting targets
-        targets_path = config['USER_DATA']['targets_path']
-        targets = pd.read_csv(targets_path)
-        self.target = targets.loc[targets['star'] == 'CoRoT-1'] # This will be replaced by a loop in the future
-        objct = list(self.target.columns)[0]
-        self.input_name = self.target[objct].item().strip()
-        self.name = self.input_name.lower() # Target name
+        self.delta_params = scraper.get_delta_params()
 
         # Getting filtered data
-        self.spectra = pd.read_csv(self.cwd+f'/output/filtered/{self.name}_data.csv')
-        self.interpolate_flags = pd.read_csv(self.cwd+f'/output/filtered/{self.name}_interpolate.csv')
-
-        # Getting parameters and model step
-        self.delta_params = ast.literal_eval(config['USER_DATA']['delta_params']) # try to automate this later
-        self.params = {
-            'teff': self.target['teff'].item(),
-            'logg': self.target['logg'].item(),
-            'feh': self.target['feh'].item()
-        }
-        self.parameters = list(self.params.keys())
-
-        # Importing the reference spectrum
-        wav_ref_path = config['USER_DATA']['reference_spectrum']
-        self.wav_ref, _ = np.loadtxt(wav_ref_path, unpack=True)
-
+        self.spectra = pd.read_csv(self.cwd+f'/output/filtered/{self.name.lower()}_data.csv')
+        self.interpolate_flags = pd.read_csv(self.cwd+f'/output/filtered/{self.name.lower()}_interpolate.csv')
         
     @staticmethod
     def interp_partial(spectrum1, spectrum2, factor, delta_param):
@@ -199,7 +177,7 @@ class SpectrumInterpolator:
         
         # Perform the interpolation
 
-        print(f'Interpolating spectra for {self.input_name}\n')
+        print(f'Interpolating spectra for {self.name}\n')
 
         steps = []
 
@@ -221,7 +199,7 @@ class SpectrumInterpolator:
     
         print('\nFinal parameters:')
         print(steps[-1][self.parameters])
-        print('='*40+' Finish! '+'='*40)
+        print('='*33+' Finish! '+'='*33)
         
         if save_file:
 
@@ -229,7 +207,7 @@ class SpectrumInterpolator:
 
 
             df = pd.DataFrame({'wavelength': self.wav_ref, 'flux': steps[-1]['flux'].item()})
-            df.to_csv(f"{path}{self.name}_interp.csv", index=False)
+            df.to_csv(f"{path}{self.name.lower()}_interp.csv", index=False)
         
         return steps
 

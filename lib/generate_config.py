@@ -5,7 +5,7 @@ cwd = os.getcwd()
 example_targets_path = cwd+'/stars.csv'
 example_database_path = cwd+'/database/'
 example_ref_spectrum_path = cwd+'/example/lte050-4.5-0.0a+0.0.BT-NextGen.7.dat.txt'
-
+all_models = ['ATMO 2020, CEQ', 'BT-NextGen (AGSS2009)', 'BT-Settl']
 
 def create_config(config_path='config.ini'):
     
@@ -14,6 +14,9 @@ def create_config(config_path='config.ini'):
     # Get user input data
     targets_path = input("Enter targets' file path [/.../your_file.csv]: ") or example_targets_path
     db_path = input("Enter database path [/your_db_folder/]: ") or example_database_path
+    print('Choose one of the following libraries:')
+    for model in all_models:
+        print(model)
     lib_name = input("Enter library name [BT-Settl]: ") or "BT-Settl"
     ref_spectrum = input("Enter reference spectrum path [/.../your_spectrum.txt]:") or example_ref_spectrum_path
 

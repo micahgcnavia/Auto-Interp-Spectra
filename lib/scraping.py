@@ -32,6 +32,10 @@ class Scraper():
         url = f'https://svo2.cab.inta-csic.es/theory/newov2/index.php?models={self.model.strip().lower()}'
         self.driver.get(url)
 
+    def get_available_models(self):
+
+        return self.driver.find_element(By.CLASS_NAME, 'selmod').text.split('\n')
+
     def get_intervals(self,  teff_min, teff_max,
                         logg_min, logg_max,
                         feh_min, feh_max):
@@ -148,7 +152,7 @@ def scrap():
     scraper.search(delay=0)
     scraper.retrieve(delay=2)
 
-    # time.sleep(3)
+    time.sleep(3)
 
     
 if __name__ == "__main__":

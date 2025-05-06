@@ -38,10 +38,17 @@ class Input:
         self.parameters = list(self.params.keys())
 
         # Getting database and model info
-        database_path = config['USER_DATA']['database_path']
+        self.database_path = config['USER_DATA']['database_path']
         self.model = config['USER_DATA']['library_name']
-        self.models_list = sorted(glob(database_path+self.model.lower()+'/*'))
 
         # Importing the reference spectrum
         wav_ref_path = config['USER_DATA']['reference_spectrum']
         self.wav_ref, _ = np.loadtxt(wav_ref_path, unpack=True)
+
+        self.refresh_models()
+
+    def refresh_models(self):
+
+        self.models_list = sorted(glob(self.database_path+self.model.lower()+'/*'))
+
+        

@@ -2,13 +2,17 @@ import pandas as pd
 import numpy as np
 import time
 import ast
+import os
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from lib.get_input_data import Input
 
-class Scraper():
+class Scraper(Input):
 
     """
         Gets missing spectra from the SVO theoretical models database.
@@ -21,9 +25,8 @@ class Scraper():
             Initializes the Scraper class.
 
         """
-        Input.__init__(self)
 
-        print('='*27+' Initializing Scraper '+'='*26+'\n')
+        super().__init__()
 
         # Setting up driver
         self.service = Service()
@@ -31,6 +34,17 @@ class Scraper():
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
         url = f'https://svo2.cab.inta-csic.es/theory/newov2/index.php?models={self.model.strip().lower()}'
         self.driver.get(url)
+
+    @staticmethod
+    def convert_to_int_if_whole(value):
+
+        if isinstance(value, (int, float)):
+
+            if value.is_integer():  # Checks if float is a whole number
+
+                return int(value)
+
+        return value
 
     def get_available_models(self):
 
@@ -42,8 +56,8 @@ class Scraper():
 
         intervals = {
         'teff': {'min': teff_min, 'max': teff_max},
-        'logg': {'min': logg_min, 'max': logg_max},
-        'meta': {'min': feh_min,  'max': feh_max}
+        'logg': {'min': self.convert_to_int_if_whole(logg_min), 'max': self.convert_to_int_if_whole(logg_max)},
+        'meta': {'min': self.convert_to_int_if_whole(feh_min),  'max': self.convert_to_int_if_whole(feh_max)}
         }
 
         return intervals
@@ -100,7 +114,7 @@ class Scraper():
         search_button = self.driver.find_element(By.NAME, 'nres')
         select_search = Select(search_button)
 
-        # Selecting all spectra available
+        # Showing all spectra available
         select_search.select_by_value('all')
 
         time.sleep(delay)
@@ -111,50 +125,91 @@ class Scraper():
 
         time.sleep(delay)
 
-    def retrieve(self, delay=None):
+    def get_all_ASCII(self):
 
         mark_all_ASCII = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[2]/table[1]/tbody/tr/td[1]/input'
-        retrieve_button = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[2]/table[1]/tbody/tr/td[4]/input'
-
         self.driver.find_element(By.XPATH, mark_all_ASCII).click()
-        time.sleep(delay)
+
+    def download(self, wait_lag):
+
+        retrieve_button = '/html/body/div[5]/table/tbody/tr/td/div/form/table/tbody/tr[1]/td[2]/table[1]/tbody/tr/td[4]/input'
 
         self.driver.find_element(By.XPATH, retrieve_button).click()
 
-def scrap():
+        # Waiting for download button to appear
+        wait = WebDriverWait(self.driver, wait_lag)
+        element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'downlink'))).click()
 
-    scraper = Scraper()
+        # Getting the file name
+        tgz_file = self.driver.find_element(By.CLASS_NAME, 'downlink').find_element(By.TAG_NAME, 'a').get_attribute('href').split('/')[-1]
 
-    intervals = scraper.get_intervals(
-                        teff_min = 5100,
-                        teff_max = 5200,
-                        logg_min = 4,
-                        logg_max = 4.5,
-                        feh_min = 0,
-                        feh_max = 0.5
-    )
+        return tgz_file
 
-    print(f'Parameter range for {scraper.model}:')
+    def update_database(self, wait_lag=20):
 
-    labels = {param: name for param, name in zip(list(intervals.keys()), ['Effective temperature (K)',
-                                                                                  'Surface gravity (dex)',
-                                                                                  'Metallicity (dex)'
-                                                                                 ])}
+        tgz_file = self.download(wait_lag) # models_something.tgz
 
-    for param in list(intervals.keys()):
+        time.sleep(15)
+        model = self.model.strip().lower()
 
-        print(f'\n{labels[param]}:\n')
-        print(scraper.get_param_range(param))
+        # Define paths
+        downloads_dir = os.path.expanduser("~/Downloads")  # Gets the user's Downloads directory
+        target_dir = self.database_path + model + '/' # Gets the user's database directory (for current model library)
+        extracted_folder = tgz_file.split('.')[0] # Gets the extracted folder name
 
-        scraper.select_value(param, intervals, limit='min', delay=0)
-        scraper.select_value(param, intervals, limit='max', delay=0)
+        source_folder = os.path.join(downloads_dir, extracted_folder + '/' + model + '/*')
+        destination_folder = self.database_path + model + '/'
 
-    scraper.search(delay=0)
-    scraper.retrieve(delay=2)
+        print('Extracting files...')
 
-    time.sleep(3)
+        subprocess.run(["tar", "-xzvf", os.path.join(downloads_dir, tgz_file), "-C", downloads_dir])
+
+        time.sleep(5)
+
+        print(f'Moving files to database...')
+
+        # Move files to database
+        subprocess.run([f"mv {source_folder} {destination_folder}"], shell = True)
+
+        # Excluding the folder itself and .tgz file
+        subprocess.run([f"rm -r {os.path.join(downloads_dir, extracted_folder)}"], shell=True)
+        subprocess.run([f"rm -r {os.path.join(downloads_dir, tgz_file)}"], shell=True)
+
+
+# def scrap():
+
+#     scraper = Scraper()
+
+#     intervals = scraper.get_intervals(
+#                         teff_min = 5100,
+#                         teff_max = 5200,
+#                         logg_min = 4,
+#                         logg_max = 4.5,
+#                         feh_min = 0,
+#                         feh_max = 0.5
+#     )
+
+#     print(f'Parameter range for {scraper.model}:')
+
+#     labels = {param: name for param, name in zip(list(intervals.keys()), ['Effective temperature (K)',
+#                                                                                   'Surface gravity (dex)',
+#                                                                                   'Metallicity (dex)'
+#                                                                                  ])}
+
+#     for param in list(intervals.keys()):
+
+#         print(f'\n{labels[param]}:\n')
+#         print(scraper.get_param_range(param))
+
+#         scraper.select_value(param, intervals, limit='min', delay=0)
+#         scraper.select_value(param, intervals, limit='max', delay=0)
+
+#     scraper.search(delay=0)
+#     scraper.retrieve(delay=2)
+
+#     time.sleep(3)
 
     
-if __name__ == "__main__":
-    scrap()
+# if __name__ == "__main__":
+#     scrap()
 

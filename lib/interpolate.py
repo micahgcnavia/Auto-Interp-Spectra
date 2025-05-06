@@ -9,7 +9,7 @@ from more_itertools import pairwise
 from collections import defaultdict
 from lib.scraping import *
 
-class SpectrumInterpolator:
+class SpectrumInterpolator(Input):
 
     """
         Encapsulates the entire interpolation process.
@@ -23,7 +23,7 @@ class SpectrumInterpolator:
 
         """
 
-        Input.__init__(self)
+        super().__init__()
 
         print('='*20+' Initializing SpectrumInterpolator '+'='*20+'\n')
 

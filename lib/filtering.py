@@ -5,12 +5,13 @@ from natsort import os_sorted
 import os
 import ast
 from tqdm import tqdm
+import itertools
 from more_itertools import pairwise
 from functools import reduce
 from collections import defaultdict
 from lib.scraping import *
 
-class Filter():
+class Filter(Input):
 
     """
         Filters the database and gets the missing spectra from the Spanish Virtual Observatory (SVO), if any.
@@ -23,13 +24,16 @@ class Filter():
             Initializes the Filter class.
 
         """
-        Input.__init__(self)
+
+        super().__init__()
 
         print('='*27+' Initializing Filter '+'='*27+'\n')
 
-        scraper = Scraper()
+        self.scraper = Scraper()
 
-        self.delta_params = scraper.get_delta_params()
+        self.delta_params = self.scraper.get_delta_params()
+
+        self.params_range = {param: self.scraper.get_param_range(param) for param in self.parameters}
         
         # Initializing interpolate dictionary
         self.interpolate = {
@@ -102,7 +106,7 @@ class Filter():
             :rtype: pandas.DataFrame
 
         """
-
+        
         models = [self.get_header_data(file) for file in tqdm(self.models_list, 'reading files...')]
 
         df = pd.DataFrame(models)
@@ -113,32 +117,56 @@ class Filter():
 
         return df
 
-    def filter_param(self, df, param):
-
-        """
-            Filters the DataFrame with all models and looks for rows where there is a match for the input parameter
-            or retrieves the rows necessary for interpolation based on the model's parameter step.
-
-            :param df: DataFrame with the metadata of all models in the database.
-            :type df: pandas.DataFrame
-            :param param: Name of the parameter to filter by.
-            :type param: str
+    def generate_combinations(self, teff, logg, meta):
+    
+        # Generate all possible combinations (Cartesian product)
+        combinations = itertools.product(teff, logg, meta)
         
-        """
+        # Convert each combination into a dictionary
+        result = [
+            {"teff": t, "logg": lg, "meta": m}
+            for t, lg, m in combinations
+        ]
+        return result
 
-        update_database = {}
+    def filter_params(self):
 
-        # Checks if the input parameter value matches one of the models' default values
-        if self.params[param] in list(df[param]):
+        # This will storage the combination of parameters to look for when retrieving the models to interpolate.
+        values = {}
 
-            self.interpolate[param] = False
-            self.conditions.append(df[param] == self.params[param])
+        for param in self.parameters:
 
-        else:
+            # Checking if the input value is not in the model pre-computed grid
+            if self.params[param] not in self.params_range[param]:
 
-            self.interpolate[param] = True
-            # Gets values 1 step around the input parameter value
-            self.conditions.append(abs(df[param] - self.params[param]) <= self.delta_params[param])
+                # If not, gets the model values around the input value using the corresponding parameter step
+                values[param] = self.params_range[param][abs(self.params_range[param] - self.params[param]) <= self.delta_params[param]]
+                self.interpolate[param] = True
+
+            else:
+
+                # If true, creates an array with the value
+                values[param] = np.array([self.params[param]])
+                self.interpolate[param] = False
+
+        combinations = self.generate_combinations(values['teff'], values['logg'], values['meta'])
+        
+        return pd.DataFrame(combinations)
+
+    def filter_database(self, all_models):
+
+        filtered_df = self.filter_params()
+
+        # Merge with the database dataframe to find matching rows
+        matched = pd.merge(all_models, filtered_df, how='inner', on=['teff', 'logg', 'meta'])
+        
+        # Find conditions NOT matched
+        missing_conditions = filtered_df.merge(matched, on=['teff', 'logg', 'meta'], how='left', indicator=True)
+        # Isolating only the unmatched rows
+        missing_conditions = missing_conditions[missing_conditions['_merge'] == 'left_only'].drop('_merge', axis=1)
+
+        return matched, missing_conditions[self.parameters]
+
 
     def filter_all(self, save_all_models=False, save_result=False):
 
@@ -172,22 +200,26 @@ class Filter():
 
             print(key+f' = {item}')
 
-        for param in (self.parameters):
+        filtered_df, missing_spectra = self.filter_database(all_models=all_models)
 
-            self.filter_param(all_models, param)
+        if len(missing_spectra) == 0:
 
-        filtered_df = all_models[reduce(lambda x, y: x & y, self.conditions)] # Makes sure all conditions are satisfied
+            print('All spectra available!')
 
-        interpolate = pd.DataFrame(self.interpolate, index=[0]) # This will be a simple DataFrame stating which parameters to interpolate
+            interpolate = pd.DataFrame(self.interpolate, index=[0]) # This will be a simple DataFrame stating which parameters to interpolate
 
-        if save_result:
+            if save_result:
 
-            name = self.name.lower()
+                name = self.name.lower()
 
-            filtered_df.to_csv(self.cwd+f'/output/filtered/{name}_data.csv', index=False)
-            interpolate.to_csv(self.cwd+f'/output/filtered/{name}_interpolate.csv', index=False)
-        
-        return filtered_df, interpolate
+                filtered_df.to_csv(self.cwd+f'/output/filtered/{name}_data.csv', index=False)
+                interpolate.to_csv(self.cwd+f'/output/filtered/{name}_interpolate.csv', index=False)
+            
+            return filtered_df, interpolate
+
+        else:
+
+            pass
 
     def check_spectra_availability(self, interpolate, filtered_df):
 
@@ -214,12 +246,12 @@ class Filter():
             print('All spectra available!')
             return True
 
-def filter_database():
+def filter_models():
 
     # Starts Filter class
     filter = Filter()
 
-    filtered_df, interpolate = filter.filter_all(save_all_models=True, save_result=True)
+    filtered_df, interpolate = filter.filter_all(save_all_models=False, save_result=False)
 
     print('\nParameters to interpolate:\n')
 
@@ -232,10 +264,10 @@ def filter_database():
 
     print(filter.delta_params)
 
-    if filter.check_spectra_availability(interpolate, filtered_df):
+    print('\nSpectra needed for interpolation:\n')
+    print(filtered_df)
 
-        print('\nSpectra needed for interpolation:\n')
-        print(filtered_df)
+    if filter.check_spectra_availability(interpolate, filtered_df):
 
         print('='*34+' Finish '+'='*34+'\n')
 
@@ -243,4 +275,4 @@ def filter_database():
         pass
 
 if __name__ == "__main__":
-    filter_database()
+    filter_models()
